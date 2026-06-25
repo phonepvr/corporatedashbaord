@@ -61,6 +61,17 @@ NOT_AVAILABLE = "Not Available"
 # review columns use the same display names, so the join is direct and there is
 # nothing to "verify".
 #
+# HRBP_CANONICAL collapses different spellings of the SAME person to one display
+# name. Matching is already case-insensitive, but distinct forms (e.g. the short
+# "Shiju" and the full "Shijumon") would otherwise look like two HRBPs. Map every
+# known variant (lower-cased) to ONE canonical display name; it is applied to BOTH
+# budget sheet names and review labels before they are matched, so all variants
+# collapse into a single portfolio whatever the case or form.
+HRBP_CANONICAL = {
+    "shiju":    "Shiju",
+    "shijumon": "Shiju",
+}
+
 # HRBP_ALIASES is an OPTIONAL fallback used ONLY when a Monthly Review label does
 # not directly match a budget-sheet name. Leave it empty for real data. The
 # entries below exist solely so the bundled DEMO workbooks still build (their
@@ -68,11 +79,19 @@ NOT_AVAILABLE = "Not Available"
 #   review label (lower) -> budget sheet / display name
 HRBP_ALIASES = {
     "aarav": "Dhruv",
-    "kabir": "Shijumon",
+    "kabir": "Shiju",
     "riya":  "Khyati",
     "nisha": "Chanchal",
     "meera": "Lincia",
 }
+
+def canon(name):
+    """Canonicalise a HRBP name: trim, collapse spaces, map known variants
+    (any case / short or full form) to one display name."""
+    if name is None:
+        return ""
+    key = re.sub(r"\s+", " ", str(name)).strip()
+    return HRBP_CANONICAL.get(key.lower(), key)
 # Optional: fold a budget detail sheet into another portfolio instead of letting
 # it stand alone (e.g. a shared trainee pool). Empty by default -> every detail
 # sheet becomes its own portfolio.  key/value are matched case-insensitively.
@@ -600,8 +619,9 @@ def parse_budget(path):
             ignored.append(sn)                   # not a record sheet
             continue
 
-        # DATA-DRIVEN: the portfolio IS the sheet name (optional SSC_FOLD merge).
-        display = fold[low] if low in fold else sn.strip()
+        # DATA-DRIVEN: the portfolio IS the sheet name (optional SSC_FOLD merge),
+        # canonicalised so variant spellings of the same person merge into one.
+        display = canon(fold[low] if low in fold else sn.strip())
         portfolio = slug(display)
         portfolio_display.setdefault(portfolio, display)
         is_ojt = "ojt" in low
@@ -740,18 +760,18 @@ def reconcile(review, portfolio_display):
     HRBP_ALIASES is only a fallback. Returns an ordered list of descriptors."""
     name_to_key = {}
     for k, disp in portfolio_display.items():
-        name_to_key[disp.strip().lower()] = k
+        name_to_key[canon(disp).lower()] = k
         name_to_key[k] = k
     descriptors = {}
     for L in review.get("hrbpNames", []):
-        target = HRBP_ALIASES.get(L.strip().lower(), L)
-        k = name_to_key.get(target.strip().lower()) or name_to_key.get(slug(target))
+        target = canon(HRBP_ALIASES.get(canon(L).lower(), canon(L)))
+        k = name_to_key.get(target.lower()) or name_to_key.get(slug(target))
         if k is None:                                    # review-only HRBP
             k = slug(L)
             portfolio_display.setdefault(k, L)
             conf = "review-only"
         else:
-            direct = L.strip().lower() == portfolio_display.get(k, "").strip().lower()
+            direct = canon(L).lower() == canon(portfolio_display.get(k, "")).lower()
             conf = "direct" if direct else "alias"
         descriptors[k] = {"key": k, "display": portfolio_display.get(k, L),
                           "reviewLabel": L, "budgetSheet": portfolio_display.get(k, NOT_AVAILABLE),

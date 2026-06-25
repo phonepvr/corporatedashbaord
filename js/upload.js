@@ -13,9 +13,14 @@ var TAT = 45;
 // read from the sheet headers and joined by name. HRBP_ALIASES is only a
 // fallback when a review label does not directly match a budget sheet name
 // (kept here so the bundled demo still parses). Keep in sync with build_data.py.
-var HRBP_ALIASES = { "aarav": "Dhruv", "kabir": "Shijumon", "riya": "Khyati", "nisha": "Chanchal", "meera": "Lincia" };
+// Collapse variant spellings of the same person (e.g. "Shiju" / "Shijumon",
+// any case) to one canonical display name. Applied to budget sheet names AND
+// review labels before matching. Keep in sync with build_data.py.
+var HRBP_CANONICAL = { "shiju": "Shiju", "shijumon": "Shiju" };
+var HRBP_ALIASES = { "aarav": "Dhruv", "kabir": "Shiju", "riya": "Khyati", "nisha": "Chanchal", "meera": "Lincia" };
 var SSC_FOLD = {};   // budget sheet name (lower) -> target portfolio display name
 function slug(s) { return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, "") || "portfolio"; }
+function canon(name) { if (name == null) return ""; var key = String(name).replace(/\s+/g, " ").trim(); return HRBP_CANONICAL[key.toLowerCase()] || key; }
 
 var baked = window.DASHBOARD_DATA;   // keep a reference to restore
 var files = {};
@@ -248,7 +253,7 @@ function parseBudget(wb, MASK) {
     var hi = -1;
     for (var i = 0; i < Math.min(6, rows.length); i++) { var joined = (rows[i] || []).map(function (c) { return norm(c).toLowerCase(); }).join(" "); if (joined.indexOf("position") >= 0 && (joined.indexOf("emp") >= 0 || joined.indexOf("function") >= 0)) { hi = i; break; } }
     if (hi < 0) { ignored.push(sn); return; }       // not a record sheet
-    var display = fold[lo] || sn.trim(), pf = slug(display), isOjt = lo.indexOf("ojt") >= 0;
+    var display = canon(fold[lo] || sn.trim()), pf = slug(display), isOjt = lo.indexOf("ojt") >= 0;
     if (!(pf in portfolioDisplay)) portfolioDisplay[pf] = display;
     var colmap = {}; (rows[hi] || []).forEach(function (h, ci) { var f = mapHeader(h); if (f && !(f in colmap)) colmap[f] = ci; });
     for (var r = hi + 1; r < rows.length; r++) {
@@ -296,14 +301,14 @@ function bucket(a) { if (a == null) return NA; a = +a; return a <= 30 ? "0-30" :
 
 /* ============================ RECONCILE + ASSEMBLE ============================ */
 function reconcile(review, portfolioDisplay) {
-  var nameToKey = {}; Object.keys(portfolioDisplay).forEach(function (k) { nameToKey[portfolioDisplay[k].trim().toLowerCase()] = k; nameToKey[k] = k; });
+  var nameToKey = {}; Object.keys(portfolioDisplay).forEach(function (k) { nameToKey[canon(portfolioDisplay[k]).toLowerCase()] = k; nameToKey[k] = k; });
   var descriptors = {};
   (review.hrbpNames || []).forEach(function (L) {
-    var target = HRBP_ALIASES[L.trim().toLowerCase()] || L;
-    var k = nameToKey[target.trim().toLowerCase()] || nameToKey[slug(target)];
+    var target = canon(HRBP_ALIASES[canon(L).toLowerCase()] || canon(L));
+    var k = nameToKey[target.toLowerCase()] || nameToKey[slug(target)];
     var conf;
     if (k == null) { k = slug(L); portfolioDisplay[k] = portfolioDisplay[k] || L; conf = "review-only"; }
-    else { conf = (L.trim().toLowerCase() === (portfolioDisplay[k] || "").trim().toLowerCase()) ? "direct" : "alias"; }
+    else { conf = (canon(L).toLowerCase() === canon(portfolioDisplay[k] || "").toLowerCase()) ? "direct" : "alias"; }
     descriptors[k] = { key: k, display: portfolioDisplay[k] || L, reviewLabel: L, budgetSheet: portfolioDisplay[k] || NA, confidence: conf, verify: false };
   });
   Object.keys(portfolioDisplay).forEach(function (k) {
