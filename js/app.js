@@ -188,9 +188,8 @@ App.init = function () {
   renderSourceSummary();
   decorateInfo();
   applyView();
-  setVisibility();
-  setNavActive();
   App.fullRender();
+  setupScrollSpy();
 };
 
 /* ---------- self-explanatory "i" affordances on every visual ---------- */
@@ -240,10 +239,12 @@ function decorateInfo() {
   });
 }
 
-// Render only the CURRENTLY ACTIVE view (charts size correctly when visible).
+// Infinite scroll: render EVERY section (all visible on one continuous page).
 function renderActive() {
-  var fn = VIEW_RENDER[ST.activeView];
-  if (fn) { try { fn(); } catch (e) { console.error(e); } }
+  VIEW_IDS.forEach(function (id) {
+    var fn = VIEW_RENDER[id];
+    if (fn) { try { fn(); } catch (e) { console.error(e); } }
+  });
   applyView();
 }
 
@@ -252,7 +253,7 @@ App.fullRender = function () {
   buildHrbpSelector();
   toggleEmpty();
   renderFilterChips();
-  renderActive();
+  if (!(DATA.meta.empty || !DATA.portfolios.length)) renderActive();
 };
 
 /* ---------- selectors / tabbed nav ---------- */
@@ -308,25 +309,24 @@ function buildNav() {
     });
   });
 }
-function setVisibility() {
-  VIEW_IDS.forEach(function (v) {
-    var n = document.getElementById(v);
-    if (n) n.classList.toggle("view-hidden", v !== ST.activeView);
-  });
-}
-function setNavActive() {
-  $all("#scrollspy a").forEach(function (a) { a.classList.toggle("active", a.dataset.target === ST.activeView); });
-}
+// Nav / quick-views / search jump to a section (continuous scroll).
 function showView(id) {
-  if (!VIEW_RENDER[id]) id = "sec-exec";
-  ST.activeView = id;
-  setVisibility();
-  setNavActive();
-  renderActive();
+  var n = document.getElementById(id);
+  if (!n) return;
+  n.scrollIntoView({ behavior: "smooth", block: "start" });
   document.body.classList.remove("nav-open");
-  var m = document.querySelector(".main");
-  if (m) m.scrollTop = 0;
-  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+// Scroll-spy: highlight the nav item for the section currently in view.
+function setupScrollSpy() {
+  var links = $all("#scrollspy a");
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) {
+        links.forEach(function (l) { l.classList.toggle("active", l.dataset.target === en.target.id); });
+      }
+    });
+  }, { rootMargin: "-130px 0px -65% 0px" });
+  VIEW_IDS.forEach(function (id) { var n = document.getElementById(id); if (n) obs.observe(n); });
 }
 function toggleEmpty() {
   var empty = !!(DATA.meta.empty || !DATA.portfolios.length);
@@ -334,9 +334,7 @@ function toggleEmpty() {
   var sp = document.querySelector(".scrollspy"); if (sp) sp.classList.toggle("hidden", empty);
   $("#quickViews").classList.toggle("hidden", empty);
   $("#sec-filters").classList.toggle("hidden", empty);
-  VIEW_IDS.forEach(function (v) { var n = document.getElementById(v); if (n && empty) n.classList.add("view-hidden"); });
-  if (!empty) setVisibility();
-  // header chip
+  VIEW_IDS.forEach(function (v) { var n = document.getElementById(v); if (n) n.classList.toggle("view-hidden", empty); });
   var chip = $("#loadChip");
   if (empty) { chip.className = "status-chip empty"; chip.textContent = "No data loaded"; }
 }
@@ -1616,8 +1614,8 @@ function applyView() {
 function wireControls() {
   $("#hrbpSel").onchange = function () { setHrbp(this.value); };
   $("#scenarioSel").onchange = function () { ST.scenario = this.value; renderKpis(); renderStory(); };
-  $("#viewExec").onclick = function () { ST.view = "exec"; renderActive(); };
-  $("#viewAnalyst").onclick = function () { ST.view = "analyst"; renderActive(); };
+  $("#viewExec").onclick = function () { ST.view = "exec"; applyView(); };
+  $("#viewAnalyst").onclick = function () { ST.view = "analyst"; applyView(); };
   $("#btnReset").onclick = resetAll;
   var nt = $("#navToggle"); if (nt) nt.onclick = function () { document.body.classList.toggle("nav-open"); };
   $("#btnPrint").onclick = function () { buildPrint(); window.print(); };
