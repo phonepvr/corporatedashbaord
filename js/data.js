@@ -12,35 +12,42 @@ window.DASHBOARD_DATA = {
         "display": "Dhruv",
         "reviewLabel": "Aarav",
         "budgetSheet": "Dhruv",
-        "confidence": "high",
+        "confidence": "alias",
+        "verify": false
+      },
+      {
+        "display": "Khyati",
+        "reviewLabel": "Riya",
+        "budgetSheet": "Khyati",
+        "confidence": "alias",
         "verify": false
       },
       {
         "display": "Chanchal",
         "reviewLabel": "Nisha",
         "budgetSheet": "Chanchal",
-        "confidence": "unverified",
-        "verify": true
+        "confidence": "alias",
+        "verify": false
       },
       {
         "display": "Lincia",
         "reviewLabel": "Meera",
         "budgetSheet": "Lincia",
-        "confidence": "unverified",
-        "verify": true
+        "confidence": "alias",
+        "verify": false
       },
       {
-        "display": "Khyati",
-        "reviewLabel": "Riya",
-        "budgetSheet": "Khyati",
-        "confidence": "unverified",
-        "verify": true
-      },
-      {
-        "display": "Shiju",
+        "display": "Shijumon",
         "reviewLabel": "Kabir",
         "budgetSheet": "Shijumon",
-        "confidence": "high",
+        "confidence": "alias",
+        "verify": false
+      },
+      {
+        "display": "SSC OJT",
+        "reviewLabel": "Not Available",
+        "budgetSheet": "SSC OJT",
+        "confidence": "budget-only",
         "verify": false
       }
     ],
@@ -99,7 +106,7 @@ window.DASHBOARD_DATA = {
       "display": "Dhruv",
       "reviewLabel": "Aarav",
       "budgetSheet": "Dhruv",
-      "confidence": "high",
+      "confidence": "alias",
       "verify": false,
       "budget": 912,
       "active": 722,
@@ -180,10 +187,102 @@ window.DASHBOARD_DATA = {
       "orgChart": "Updated",
       "engagementLowest": "Corporate Services",
       "engagementLowestScore": 7.55,
-      "budgetRecordCount": 1117,
-      "occupiedRecords": 722,
+      "budgetRecordCount": 1007,
+      "occupiedRecords": 612,
       "vacantRecords": 395,
       "riskIndex": 62.8,
+      "riskBand": "High"
+    },
+    {
+      "key": "khyati",
+      "display": "Khyati",
+      "reviewLabel": "Riya",
+      "budgetSheet": "Khyati",
+      "confidence": "alias",
+      "verify": false,
+      "budget": 489,
+      "active": 329,
+      "vacancy": 160,
+      "vacancyPct": 32.7,
+      "joiningsJune": 3,
+      "exitsJune": 5,
+      "joiningsYTD": 33,
+      "exitsYTD": 27,
+      "netMovementYTD": 6,
+      "future": 53,
+      "onHold": null,
+      "delimit": null,
+      "attrition": 4.3,
+      "attritionInsight": "Key themes include growth expectations and mobility constraints. Mitigation to be tracked through talent reviews and retention check-ins.",
+      "recruitment": {
+        "wip": {
+          "rpo": 31,
+          "consultant": 6,
+          "other": 4,
+          "total": 41
+        },
+        "offered": {
+          "rpo": 6,
+          "consultant": 1,
+          "other": 0,
+          "total": 7
+        },
+        "toBeOffered": {
+          "rpo": 3,
+          "consultant": 0,
+          "other": 1,
+          "total": 4
+        },
+        "joined": {
+          "rpo": 13,
+          "consultant": 1,
+          "other": 13,
+          "total": 27
+        },
+        "offerDeclined": {
+          "rpo": 0,
+          "consultant": 0,
+          "other": 0,
+          "total": 0
+        }
+      },
+      "openPipeline": 52,
+      "offered": 7,
+      "joined": 27,
+      "offerToJoin": 385.7,
+      "closureRate": 34.2,
+      "aging": {
+        "wip": 66,
+        "b0_30": 6,
+        "b30_60": 8,
+        "b60_90": 12,
+        "b90": 27
+      },
+      "tatBreachPct": 40.9,
+      "criticalCases": [
+        "Senior Lead - Process Governance",
+        "Lead - Project Controls",
+        "Manager - Shared Services"
+      ],
+      "pms": {
+        "goalSetting": 6.9,
+        "midYear": "Not initiated",
+        "endYear": "Not initiated"
+      },
+      "pmsPending": 93.1,
+      "training": {
+        "rowLabel": "Riya",
+        "totalHeadcount": 426,
+        "trainingDays": 213.44,
+        "upcoming": "Not Available"
+      },
+      "orgChart": "Updated",
+      "engagementLowest": "Communications",
+      "engagementLowestScore": 6.27,
+      "budgetRecordCount": 461,
+      "occupiedRecords": 359,
+      "vacantRecords": 102,
+      "riskIndex": 78.5,
       "riskBand": "High"
     },
     {
@@ -191,8 +290,8 @@ window.DASHBOARD_DATA = {
       "display": "Chanchal",
       "reviewLabel": "Nisha",
       "budgetSheet": "Chanchal",
-      "confidence": "unverified",
-      "verify": true,
+      "confidence": "alias",
+      "verify": false,
       "budget": 389,
       "active": 272,
       "vacancy": 117,
@@ -283,8 +382,8 @@ window.DASHBOARD_DATA = {
       "display": "Lincia",
       "reviewLabel": "Meera",
       "budgetSheet": "Lincia",
-      "confidence": "unverified",
-      "verify": true,
+      "confidence": "alias",
+      "verify": false,
       "budget": 357,
       "active": 207,
       "vacancy": 150,
@@ -371,103 +470,11 @@ window.DASHBOARD_DATA = {
       "riskBand": "High"
     },
     {
-      "key": "khyati",
-      "display": "Khyati",
-      "reviewLabel": "Riya",
-      "budgetSheet": "Khyati",
-      "confidence": "unverified",
-      "verify": true,
-      "budget": 489,
-      "active": 329,
-      "vacancy": 160,
-      "vacancyPct": 32.7,
-      "joiningsJune": 3,
-      "exitsJune": 5,
-      "joiningsYTD": 33,
-      "exitsYTD": 27,
-      "netMovementYTD": 6,
-      "future": 53,
-      "onHold": null,
-      "delimit": null,
-      "attrition": 4.3,
-      "attritionInsight": "Key themes include growth expectations and mobility constraints. Mitigation to be tracked through talent reviews and retention check-ins.",
-      "recruitment": {
-        "wip": {
-          "rpo": 31,
-          "consultant": 6,
-          "other": 4,
-          "total": 41
-        },
-        "offered": {
-          "rpo": 6,
-          "consultant": 1,
-          "other": 0,
-          "total": 7
-        },
-        "toBeOffered": {
-          "rpo": 3,
-          "consultant": 0,
-          "other": 1,
-          "total": 4
-        },
-        "joined": {
-          "rpo": 13,
-          "consultant": 1,
-          "other": 13,
-          "total": 27
-        },
-        "offerDeclined": {
-          "rpo": 0,
-          "consultant": 0,
-          "other": 0,
-          "total": 0
-        }
-      },
-      "openPipeline": 52,
-      "offered": 7,
-      "joined": 27,
-      "offerToJoin": 385.7,
-      "closureRate": 34.2,
-      "aging": {
-        "wip": 66,
-        "b0_30": 6,
-        "b30_60": 8,
-        "b60_90": 12,
-        "b90": 27
-      },
-      "tatBreachPct": 40.9,
-      "criticalCases": [
-        "Senior Lead - Process Governance",
-        "Lead - Project Controls",
-        "Manager - Shared Services"
-      ],
-      "pms": {
-        "goalSetting": 6.9,
-        "midYear": "Not initiated",
-        "endYear": "Not initiated"
-      },
-      "pmsPending": 93.1,
-      "training": {
-        "rowLabel": "Riya",
-        "totalHeadcount": 426,
-        "trainingDays": 213.44,
-        "upcoming": "Not Available"
-      },
-      "orgChart": "Updated",
-      "engagementLowest": "Communications",
-      "engagementLowestScore": 6.27,
-      "budgetRecordCount": 461,
-      "occupiedRecords": 359,
-      "vacantRecords": 102,
-      "riskIndex": 78.5,
-      "riskBand": "High"
-    },
-    {
-      "key": "shiju",
-      "display": "Shiju",
+      "key": "shijumon",
+      "display": "Shijumon",
       "reviewLabel": "Kabir",
       "budgetSheet": "Shijumon",
-      "confidence": "high",
+      "confidence": "alias",
       "verify": false,
       "budget": 57,
       "active": 31,
@@ -549,6 +556,48 @@ window.DASHBOARD_DATA = {
       "vacantRecords": 26,
       "riskIndex": 55.3,
       "riskBand": "Moderate"
+    },
+    {
+      "key": "sscojt",
+      "display": "SSC OJT",
+      "reviewLabel": null,
+      "budgetSheet": "SSC OJT",
+      "confidence": "budget-only",
+      "verify": false,
+      "budget": null,
+      "active": null,
+      "vacancy": null,
+      "vacancyPct": null,
+      "joiningsJune": null,
+      "exitsJune": null,
+      "joiningsYTD": null,
+      "exitsYTD": null,
+      "netMovementYTD": 0,
+      "future": null,
+      "onHold": null,
+      "delimit": null,
+      "attrition": null,
+      "attritionInsight": "Not Available",
+      "recruitment": {},
+      "openPipeline": 0,
+      "offered": 0,
+      "joined": 0,
+      "offerToJoin": null,
+      "closureRate": null,
+      "aging": {},
+      "tatBreachPct": null,
+      "criticalCases": [],
+      "pms": {},
+      "pmsPending": null,
+      "training": null,
+      "orgChart": "Not Available",
+      "engagementLowest": "Not Available",
+      "engagementLowestScore": null,
+      "budgetRecordCount": 110,
+      "occupiedRecords": 110,
+      "vacantRecords": 0,
+      "riskIndex": 0.0,
+      "riskBand": "Low"
     }
   ],
   "budgetRecords": [
@@ -14651,7 +14700,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14665,7 +14714,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14679,7 +14728,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14693,7 +14742,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14707,7 +14756,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14721,7 +14770,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14735,7 +14784,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14749,7 +14798,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14763,7 +14812,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14777,7 +14826,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14791,7 +14840,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14805,7 +14854,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14819,7 +14868,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14833,7 +14882,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14847,7 +14896,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14861,7 +14910,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14875,7 +14924,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14889,7 +14938,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14903,7 +14952,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14917,7 +14966,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14931,7 +14980,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14945,7 +14994,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14959,7 +15008,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14973,7 +15022,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -14987,7 +15036,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15001,7 +15050,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15015,7 +15064,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15029,7 +15078,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15043,7 +15092,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15057,7 +15106,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15071,7 +15120,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15085,7 +15134,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15099,7 +15148,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15113,7 +15162,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15127,7 +15176,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15141,7 +15190,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15155,7 +15204,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15169,7 +15218,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15183,7 +15232,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Beta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15197,7 +15246,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15211,7 +15260,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15225,7 +15274,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15239,7 +15288,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15253,7 +15302,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15267,7 +15316,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15281,7 +15330,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15295,7 +15344,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Epsilon",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15309,7 +15358,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15323,7 +15372,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15337,7 +15386,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15351,7 +15400,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15365,7 +15414,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15379,7 +15428,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15393,7 +15442,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15407,7 +15456,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15421,7 +15470,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15435,7 +15484,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15449,7 +15498,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15463,7 +15512,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15477,7 +15526,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Alpha",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15491,7 +15540,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15505,7 +15554,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15519,7 +15568,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15533,7 +15582,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15547,7 +15596,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15561,7 +15610,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15575,7 +15624,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15589,7 +15638,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15603,7 +15652,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15617,7 +15666,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15631,7 +15680,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15645,7 +15694,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15659,7 +15708,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15673,7 +15722,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15687,7 +15736,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15701,7 +15750,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Gamma",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15715,7 +15764,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15729,7 +15778,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15743,7 +15792,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15757,7 +15806,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15771,7 +15820,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15785,7 +15834,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15799,7 +15848,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15813,7 +15862,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15827,7 +15876,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15841,7 +15890,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15855,7 +15904,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15869,7 +15918,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15883,7 +15932,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15897,7 +15946,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15911,7 +15960,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15925,7 +15974,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15939,7 +15988,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Delta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15953,7 +16002,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15967,7 +16016,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15981,7 +16030,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -15995,7 +16044,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16009,7 +16058,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16023,7 +16072,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16037,7 +16086,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16051,7 +16100,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16065,7 +16114,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16079,7 +16128,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16093,7 +16142,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16107,7 +16156,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16121,7 +16170,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16135,7 +16184,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16149,7 +16198,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16163,7 +16212,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16177,7 +16226,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "dhruv",
+      "portfolio": "sscojt",
       "plant": "Site Zeta",
       "function": "Function Kappa",
       "department": "Department Delta",
@@ -16191,7 +16240,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16205,7 +16254,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16219,7 +16268,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16233,7 +16282,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16247,7 +16296,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16261,7 +16310,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16275,7 +16324,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16289,7 +16338,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16303,7 +16352,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16317,7 +16366,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16331,7 +16380,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16345,7 +16394,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16359,7 +16408,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16373,7 +16422,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16387,7 +16436,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16401,7 +16450,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16415,7 +16464,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16429,7 +16478,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16443,7 +16492,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16457,7 +16506,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16471,7 +16520,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16485,7 +16534,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16499,7 +16548,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16513,7 +16562,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16527,7 +16576,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16541,7 +16590,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16555,7 +16604,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16569,7 +16618,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Function Alpha",
       "department": "Department Epsilon",
@@ -16583,7 +16632,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16597,7 +16646,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Theta",
@@ -16611,7 +16660,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Theta",
@@ -16625,7 +16674,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Theta",
@@ -16639,7 +16688,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Theta",
@@ -16653,7 +16702,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16667,7 +16716,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16681,7 +16730,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16695,7 +16744,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16709,7 +16758,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16723,7 +16772,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16737,7 +16786,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Theta",
@@ -16751,7 +16800,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16765,7 +16814,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16779,7 +16828,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16793,7 +16842,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Theta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16807,7 +16856,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Theta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16821,7 +16870,7 @@ window.DASHBOARD_DATA = {
       "remarks": "Resigned"
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Theta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16835,7 +16884,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Theta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16849,7 +16898,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Theta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16863,7 +16912,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Theta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16877,7 +16926,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16891,7 +16940,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Iota",
       "function": "Function Alpha",
       "department": "Department Theta",
@@ -16905,7 +16954,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Iota",
       "function": "Function Alpha",
       "department": "Department Epsilon",
@@ -16919,7 +16968,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Kappa",
       "function": "Function Gamma",
       "department": "Department Iota",
@@ -16933,7 +16982,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16947,7 +16996,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Zeta",
       "function": "Site Eta",
       "department": "Department Eta",
@@ -16961,7 +17010,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Theta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16975,7 +17024,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Theta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -16989,7 +17038,7 @@ window.DASHBOARD_DATA = {
       "remarks": ""
     },
     {
-      "portfolio": "shiju",
+      "portfolio": "shijumon",
       "plant": "Site Theta",
       "function": "Function Beta",
       "department": "Department Theta",
@@ -45940,97 +45989,6 @@ window.DASHBOARD_DATA = {
     },
     {
       "id": "A005",
-      "hrbp": "Chanchal",
-      "theme": "Vacancy",
-      "issue": "Vacancy pressure above 20%%",
-      "evidence": "Vacancy 30.1% (117 of 389 positions)",
-      "impact": "Capacity & delivery risk",
-      "recommendation": "Prioritise sourcing for open roles; review hold list",
-      "owner": "HRBP / TA",
-      "due": "This month",
-      "priority": "P1",
-      "status": "Not Started"
-    },
-    {
-      "id": "A006",
-      "hrbp": "Chanchal",
-      "theme": "Ageing",
-      "issue": "Roles ageing beyond 90 days",
-      "evidence": "12 roles in 90+ bucket",
-      "impact": "TAT breach / business escalation",
-      "recommendation": "Escalate 90+ roles; revisit sourcing channel",
-      "owner": "TA",
-      "due": "This month",
-      "priority": "P1",
-      "status": "Not Started"
-    },
-    {
-      "id": "A007",
-      "hrbp": "Chanchal",
-      "theme": "PMS",
-      "issue": "PMS goal-setting below 85%%",
-      "evidence": "Goal setting 4.2%",
-      "impact": "Performance cycle readiness",
-      "recommendation": "Drive goal-setting completion",
-      "owner": "HRBP",
-      "due": "This month",
-      "priority": "P2",
-      "status": "Not Started"
-    },
-    {
-      "id": "A008",
-      "hrbp": "Chanchal",
-      "theme": "Business dependency",
-      "issue": "Critical roles flagged",
-      "evidence": "Lead - Operations Excellence; Manager - Digital Transformation; Head - Business Planning",
-      "impact": "Key role gaps",
-      "recommendation": "Track top-3 critical roles to closure",
-      "owner": "HRBP / Business",
-      "due": "This month",
-      "priority": "P1",
-      "status": "Not Started"
-    },
-    {
-      "id": "A009",
-      "hrbp": "Lincia",
-      "theme": "Vacancy",
-      "issue": "Vacancy pressure above 20%%",
-      "evidence": "Vacancy 42.0% (150 of 357 positions)",
-      "impact": "Capacity & delivery risk",
-      "recommendation": "Prioritise sourcing for open roles; review hold list",
-      "owner": "HRBP / TA",
-      "due": "This month",
-      "priority": "P1",
-      "status": "Not Started"
-    },
-    {
-      "id": "A010",
-      "hrbp": "Lincia",
-      "theme": "PMS",
-      "issue": "PMS goal-setting below 85%%",
-      "evidence": "Goal setting 3.8%",
-      "impact": "Performance cycle readiness",
-      "recommendation": "Drive goal-setting completion",
-      "owner": "HRBP",
-      "due": "This month",
-      "priority": "P2",
-      "status": "Not Started"
-    },
-    {
-      "id": "A011",
-      "hrbp": "Lincia",
-      "theme": "Business dependency",
-      "issue": "Critical roles flagged",
-      "evidence": "Specialist - ERP Support; Lead - Data Platforms; Head - Technology Projects",
-      "impact": "Key role gaps",
-      "recommendation": "Track top-3 critical roles to closure",
-      "owner": "HRBP / Business",
-      "due": "This month",
-      "priority": "P1",
-      "status": "Not Started"
-    },
-    {
-      "id": "A012",
       "hrbp": "Khyati",
       "theme": "Vacancy",
       "issue": "Vacancy pressure above 20%%",
@@ -46043,7 +46001,7 @@ window.DASHBOARD_DATA = {
       "status": "Not Started"
     },
     {
-      "id": "A013",
+      "id": "A006",
       "hrbp": "Khyati",
       "theme": "Ageing",
       "issue": "Roles ageing beyond 90 days",
@@ -46056,7 +46014,7 @@ window.DASHBOARD_DATA = {
       "status": "Not Started"
     },
     {
-      "id": "A014",
+      "id": "A007",
       "hrbp": "Khyati",
       "theme": "PMS",
       "issue": "PMS goal-setting below 85%%",
@@ -46069,7 +46027,7 @@ window.DASHBOARD_DATA = {
       "status": "Not Started"
     },
     {
-      "id": "A015",
+      "id": "A008",
       "hrbp": "Khyati",
       "theme": "Business dependency",
       "issue": "Critical roles flagged",
@@ -46082,8 +46040,99 @@ window.DASHBOARD_DATA = {
       "status": "Not Started"
     },
     {
+      "id": "A009",
+      "hrbp": "Chanchal",
+      "theme": "Vacancy",
+      "issue": "Vacancy pressure above 20%%",
+      "evidence": "Vacancy 30.1% (117 of 389 positions)",
+      "impact": "Capacity & delivery risk",
+      "recommendation": "Prioritise sourcing for open roles; review hold list",
+      "owner": "HRBP / TA",
+      "due": "This month",
+      "priority": "P1",
+      "status": "Not Started"
+    },
+    {
+      "id": "A010",
+      "hrbp": "Chanchal",
+      "theme": "Ageing",
+      "issue": "Roles ageing beyond 90 days",
+      "evidence": "12 roles in 90+ bucket",
+      "impact": "TAT breach / business escalation",
+      "recommendation": "Escalate 90+ roles; revisit sourcing channel",
+      "owner": "TA",
+      "due": "This month",
+      "priority": "P1",
+      "status": "Not Started"
+    },
+    {
+      "id": "A011",
+      "hrbp": "Chanchal",
+      "theme": "PMS",
+      "issue": "PMS goal-setting below 85%%",
+      "evidence": "Goal setting 4.2%",
+      "impact": "Performance cycle readiness",
+      "recommendation": "Drive goal-setting completion",
+      "owner": "HRBP",
+      "due": "This month",
+      "priority": "P2",
+      "status": "Not Started"
+    },
+    {
+      "id": "A012",
+      "hrbp": "Chanchal",
+      "theme": "Business dependency",
+      "issue": "Critical roles flagged",
+      "evidence": "Lead - Operations Excellence; Manager - Digital Transformation; Head - Business Planning",
+      "impact": "Key role gaps",
+      "recommendation": "Track top-3 critical roles to closure",
+      "owner": "HRBP / Business",
+      "due": "This month",
+      "priority": "P1",
+      "status": "Not Started"
+    },
+    {
+      "id": "A013",
+      "hrbp": "Lincia",
+      "theme": "Vacancy",
+      "issue": "Vacancy pressure above 20%%",
+      "evidence": "Vacancy 42.0% (150 of 357 positions)",
+      "impact": "Capacity & delivery risk",
+      "recommendation": "Prioritise sourcing for open roles; review hold list",
+      "owner": "HRBP / TA",
+      "due": "This month",
+      "priority": "P1",
+      "status": "Not Started"
+    },
+    {
+      "id": "A014",
+      "hrbp": "Lincia",
+      "theme": "PMS",
+      "issue": "PMS goal-setting below 85%%",
+      "evidence": "Goal setting 3.8%",
+      "impact": "Performance cycle readiness",
+      "recommendation": "Drive goal-setting completion",
+      "owner": "HRBP",
+      "due": "This month",
+      "priority": "P2",
+      "status": "Not Started"
+    },
+    {
+      "id": "A015",
+      "hrbp": "Lincia",
+      "theme": "Business dependency",
+      "issue": "Critical roles flagged",
+      "evidence": "Specialist - ERP Support; Lead - Data Platforms; Head - Technology Projects",
+      "impact": "Key role gaps",
+      "recommendation": "Track top-3 critical roles to closure",
+      "owner": "HRBP / Business",
+      "due": "This month",
+      "priority": "P1",
+      "status": "Not Started"
+    },
+    {
       "id": "A016",
-      "hrbp": "Shiju",
+      "hrbp": "Shijumon",
       "theme": "Vacancy",
       "issue": "Vacancy pressure above 20%%",
       "evidence": "Vacancy 45.6% (26 of 57 positions)",
@@ -46096,7 +46145,7 @@ window.DASHBOARD_DATA = {
     },
     {
       "id": "A017",
-      "hrbp": "Shiju",
+      "hrbp": "Shijumon",
       "theme": "PMS",
       "issue": "PMS goal-setting below 85%%",
       "evidence": "Goal setting 3.6%",
@@ -46152,10 +46201,10 @@ window.DASHBOARD_DATA = {
         "severity": "low"
       },
       {
-        "type": "Verify-flagged HRBP mapping",
-        "count": 3,
-        "detail": "Khyati/Chanchal/Lincia ↔ Riya/Nisha/Meera mapped by size; correct HRBP_DISPLAY_MAP if known.",
-        "severity": "medium"
+        "type": "Alias-mapped HRBPs",
+        "count": 5,
+        "detail": "Review labels joined to budget portfolios via HRBP_ALIASES (names differ). Empty HRBP_ALIASES once review and budget use the same names.",
+        "severity": "low"
       }
     ],
     "actionRequired": 1

@@ -1349,11 +1349,14 @@ function renderSourceSummary() {
     tr("Ignored / pivot sheets", (m.ignoredSheets || []).join(", ")) +
     tr("Privacy", m.privacyNote) +
     "</tbody></table>";
-  html += "<h4 style='margin-top:14px;font-size:13px'>HRBP mapping in use <span class='badge verify'>⚠ size-ranked, verify</span></h4>";
-  html += "<table class='data'><thead><tr><th>Display</th><th>Review label</th><th>Budget sheet</th><th>Confidence</th></tr></thead><tbody>";
+  var anyAlias = (m.hrbpMap || []).some(function (x) { return x.confidence !== "direct"; });
+  html += "<h4 style='margin-top:14px;font-size:13px'>HRBP join (portfolio ← review label) " +
+    (anyAlias ? "<span class='badge verify'>alias fallback in use</span>" : "<span class='badge' style='background:#e4f5ec;color:#1e8a5a;border-color:#bfe6d0'>direct name match</span>") + "</h4>";
+  html += "<table class='data'><thead><tr><th>Portfolio</th><th>Review label</th><th>Budget sheet</th><th>Match</th></tr></thead><tbody>";
   m.hrbpMap.forEach(function (x) {
+    var rag = x.confidence === "direct" ? "green" : x.confidence === "budget-only" ? "grey" : "amber";
     html += "<tr><td>" + esc(x.display) + "</td><td>" + esc(x.reviewLabel) + "</td><td>" + esc(x.budgetSheet) +
-      "</td><td>" + (x.verify ? pill("amber", x.confidence) : pill("green", x.confidence)) + "</td></tr>";
+      "</td><td>" + pill(rag, x.confidence) + "</td></tr>";
   });
   html += "</tbody></table>";
   $("#sourceSummary").innerHTML = html;

@@ -52,35 +52,32 @@ DEFAULT_TAT_DAYS = 45          # tracker's TAT field is scrambled -> assumed def
 NOT_AVAILABLE = "Not Available"
 
 # ------------------------------------------------------------------------------
-# HRBP_DISPLAY_MAP  — the ONE editable reconciliation constant (see README).
+# HRBP reconciliation — DATA-DRIVEN (no hard-coded portfolio list, no heuristics).
 #
-# The three workbooks label HRBPs differently and DO NOT share a join key:
-#   * Monthly Review 'Summary'  -> Aarav, Meera, Nisha, Riya, Kabir
-#   * Budget workbook           -> Dhruv, Shijumon, Khyati, Chanchal, Lincia (+ SSC OJT)
-#   * Recruitment Tracker       -> scrambled placeholders (UNUSABLE as a key)
+# Portfolios are discovered straight from the BUDGET workbook's detail-sheet
+# names; the display name IS the sheet name. The Monthly Review's HRBP columns
+# are read from the sheet's own header rows and joined to those portfolios BY
+# NAME (case-insensitive, trimmed). In real data the budget sheets and the
+# review columns use the same display names, so the join is direct and there is
+# nothing to "verify".
 #
-# We map each source's labels onto 5 canonical portfolios with the display names
-# Dhruv, Chanchal, Lincia, Khyati, Shiju  (+ an "All HRBPs" rollup).
-#
-# Heuristic = SIZE-RANKED.  # VERIFY — positional/size assumption:
-#   Shijumon <-> Kabir  -> "Shiju"   (~57-58 budgeted; near-exact size; HIGH confidence)
-#   Dhruv    <-> Aarav  -> "Dhruv"   (both the largest portfolio;        HIGH confidence)
-#   Khyati/Chanchal/Lincia <-> Riya/Nisha/Meera  -> mapped by DESCENDING size; UNVERIFIED.
-# Correct a single entry below if the true mapping is known.
-# ------------------------------------------------------------------------------
-HRBP_DISPLAY_MAP = {
-    # canonical portfolio key : { display, reviewLabel, budgetSheet, confidence }
-    "dhruv":   {"display": "Dhruv",   "reviewLabel": "Aarav", "budgetSheet": "Dhruv",     "confidence": "high",       "verify": False},
-    "khyati":  {"display": "Khyati",  "reviewLabel": "Riya",  "budgetSheet": "Khyati",    "confidence": "unverified", "verify": True},
-    "chanchal":{"display": "Chanchal","reviewLabel": "Nisha", "budgetSheet": "Chanchal",  "confidence": "unverified", "verify": True},
-    "lincia":  {"display": "Lincia",  "reviewLabel": "Meera", "budgetSheet": "Lincia",    "confidence": "unverified", "verify": True},
-    "shiju":   {"display": "Shiju",   "reviewLabel": "Kabir", "budgetSheet": "Shijumon",  "confidence": "high",       "verify": False},
+# HRBP_ALIASES is an OPTIONAL fallback used ONLY when a Monthly Review label does
+# not directly match a budget-sheet name. Leave it empty for real data. The
+# entries below exist solely so the bundled DEMO workbooks still build (their
+# review uses Aarav/Meera/... while the demo budget uses Dhruv/Shijumon/...).
+#   review label (lower) -> budget sheet / display name
+HRBP_ALIASES = {
+    "aarav": "Dhruv",
+    "kabir": "Shijumon",
+    "riya":  "Khyati",
+    "nisha": "Chanchal",
+    "meera": "Lincia",
 }
-# SSC OJT (trainee pool) is handled by Aarav per the review ("Aarav for SSC"),
-# and Aarav <-> Dhruv, so the SSC OJT budget sheet is folded into the Dhruv portfolio.
-SSC_OJT_PORTFOLIO = "dhruv"
-
-PORTFOLIO_ORDER = ["dhruv", "chanchal", "lincia", "khyati", "shiju"]
+# Optional: fold a budget detail sheet into another portfolio instead of letting
+# it stand alone (e.g. a shared trainee pool). Empty by default -> every detail
+# sheet becomes its own portfolio.  key/value are matched case-insensitively.
+#   budget sheet name (lower) -> target portfolio display name
+SSC_FOLD = {}
 
 # Sheets to detect-but-ignore for record parsing (pivots / scratch / empty).
 IGNORE_SHEET_HINTS = [
@@ -203,8 +200,6 @@ MASK = Masker()
 # 2. MONTHLY REVIEW  ('Summary' sheet) — the PRIMARY source.
 #    Parsed SECTION BY SECTION using the label in col B/C as the anchor.
 # ==============================================================================
-REVIEW_HRBPS = ["Aarav", "Meera", "Nisha", "Riya", "Kabir"]
-
 def parse_review(path):
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     sn = find_sheet(wb, "Summary")
@@ -228,14 +223,29 @@ def parse_review(path):
         # section row-labels live in col C (index 2)
         return norm(cell(i, 2))
 
-    out = {"hrbps": {}, "engagement": [], "initiatives": [], "benchmark": None}
-    for h in REVIEW_HRBPS:
-        out["hrbps"][h] = {}
+    # Discover the HRBP names from a section's HEADER ROW rather than hard-coding
+    # them. `span` is the columns each HRBP occupies (1 normally; 3 in the
+    # Recruitment Overview where each HRBP splits into RPO/Consultant/Other).
+    def read_hrbp_header(header_row, span=1, start_col=3):
+        pairs, c = [], start_col
+        while c < 40:
+            v = norm(cell(header_row, c))
+            if not v or v.lower() in ("total", "grand total"):
+                break
+            pairs.append((v, c))
+            c += span
+        return pairs
 
-    # ---- Headcount Overview --------------------------------------------------
-    # value columns: Aarav=3, Meera=4, Nisha=5, Riya=6, Kabir=7, Total=8
-    hc_cols = {"Aarav": 3, "Meera": 4, "Nisha": 5, "Riya": 6, "Kabir": 7}
+    out = {"hrbps": {}, "engagement": [], "initiatives": [], "benchmark": None}
+
+    # ---- Headcount Overview (authoritative HRBP name list) -------------------
     hc_start = section_row("Headcount Overview")
+    hc_pairs = read_hrbp_header(hc_start + 1) if hc_start is not None else []
+    hrbp_names = [p[0] for p in hc_pairs]        # e.g. real data: Dhruv, Chanchal…
+    hc_cols = {name: col for name, col in hc_pairs}
+    out["hrbpNames"] = hrbp_names
+    for h in hrbp_names:
+        out["hrbps"][h] = {}
     hc_fields = {
         "Total Position 2026": "budget",
         "Active Employees": "active",
@@ -277,11 +287,12 @@ def parse_review(path):
     # "To Be Offered", so we match on normalised equality, NOT contains.
     rec_field = {"wip": "wip", "offered": "offered", "to be offered": "toBeOffered",
                  "joined 2026": "joined", "offer declined": "offerDeclined"}
-    # sub-column layout (0-indexed): Aarav 3-5, Meera 6-8, Nisha 9-11, Riya 12-14, Kabir 15-17
-    rec_cols = {"Aarav": 3, "Meera": 6, "Nisha": 9, "Riya": 12, "Kabir": 15}
+    # each HRBP spans 3 sub-columns (RPO / Consultant / Other) — discover starts.
+    rec_cols = ({name: col for name, col in read_hrbp_header(rec_start + 1, span=3)}
+                if rec_start is not None else {})
     if rec_start is not None:
-        for h in REVIEW_HRBPS:
-            out["hrbps"][h]["recruitment"] = {}
+        for h in hrbp_names:
+            out["hrbps"].setdefault(h, {})["recruitment"] = {}
         for i in range(rec_start + 1, rec_start + 9):
             lbl = label_in_row(i).lower().strip()
             field = rec_field.get(lbl)
@@ -298,12 +309,13 @@ def parse_review(path):
 
     # ---- Aging Overview ------------------------------------------------------
     ag_start = section_row("Aging Overview")
-    ag_cols = {"Aarav": 3, "Meera": 4, "Nisha": 5, "Riya": 6, "Kabir": 7}
+    ag_cols = ({name: col for name, col in read_hrbp_header(ag_start + 1)}
+               if ag_start is not None else {})
     ag_rows = {"WIP": "wip", "0-30": "b0_30", "30-60": "b30_60",
                "60-90": "b60_90", "90 +": "b90"}
     if ag_start is not None:
-        for h in REVIEW_HRBPS:
-            out["hrbps"][h]["aging"] = {}
+        for h in hrbp_names:
+            out["hrbps"].setdefault(h, {})["aging"] = {}
         for i in range(ag_start + 1, ag_start + 9):
             lbl = label_in_row(i)
             if not lbl:
@@ -337,7 +349,7 @@ def parse_review(path):
             if row_label:
                 # detect an HRBP block label (may be "Aarav", "Aarav for SSC", "Nisha"..)
                 matched = None
-                for h in REVIEW_HRBPS:
+                for h in hrbp_names:
                     if h.lower() in row_label.lower():
                         matched = h
                         break
@@ -360,10 +372,8 @@ def parse_review(path):
     if tr_start is not None:
         # header at tr_start+1; rows tr_start+2 .. until 'Org Charts'
         end = section_row("Org Charts") or (tr_start + 10)
-        # labels in col C are scrambled; map positionally by Total Headcount magnitude,
-        # but we attach training to HRBPs by order of appearance fallback.
-        order = ["Aarav", "Nisha", "Meera", "Riya", "Kabir"]  # observed row order after the SSC note rows
-        # We instead capture every data row that has a numeric Total Headcount.
+        # Row labels in col C may be scrambled; capture every data row that has a
+        # numeric Total Headcount, then attach by the HRBP name in the label.
         train_rows = []
         for i in range(tr_start + 2, end):
             total = num(cell(i, 3))
@@ -377,21 +387,21 @@ def parse_review(path):
                 "upcoming": norm(cell(i, 10)) or NOT_AVAILABLE,
             })
         # Attach by matching the HRBP name embedded in the row label where possible.
-        for h in REVIEW_HRBPS:
+        for h in hrbp_names:
             for tr in train_rows:
                 if h.lower() in tr["rowLabel"].lower():
                     out["hrbps"][h]["training"] = tr
                     break
-        # Aarav's row label is the scrambled "Dummy business note" first data row.
-        if "training" not in out["hrbps"]["Aarav"] and train_rows:
-            out["hrbps"]["Aarav"]["training"] = train_rows[0]
+        # Fallback: if the first HRBP's row label was scrambled, take the first row.
+        if hrbp_names and "training" not in out["hrbps"].get(hrbp_names[0], {}) and train_rows:
+            out["hrbps"].setdefault(hrbp_names[0], {})["training"] = train_rows[0]
 
     # ---- Org Charts ----------------------------------------------------------
     oc_start = section_row("Org Charts")
     if oc_start is not None:
         for i in range(oc_start + 1, oc_start + 8):
             lbl = norm(cell(i, 2))
-            for h in REVIEW_HRBPS:
+            for h in hrbp_names:
                 if lbl.lower() == h.lower():
                     out["hrbps"][h]["orgChart"] = norm(cell(i, 3)) or NOT_AVAILABLE
 
@@ -400,7 +410,7 @@ def parse_review(path):
     if pms_start is not None:
         for i in range(pms_start + 1, pms_start + 8):
             lbl = norm(cell(i, 2))
-            for h in REVIEW_HRBPS:
+            for h in hrbp_names:
                 if lbl.lower() == h.lower():
                     out["hrbps"][h]["pms"] = {
                         "goalSetting": pct(num(cell(i, 3))),
@@ -415,13 +425,12 @@ def parse_review(path):
             su_start = i
             break
     if su_start is not None:
-        # header row su_start+1: cols 3..7 -> Aarav, Nisha, Meera, Riya, Kabir (ORDER differs!)
-        hdr = [norm(cell(su_start + 1, c)) for c in range(3, 8)]
+        # header row su_start+1 lists the HRBPs (order may differ from Headcount).
         su_cols = {}
-        for idx, name in enumerate(hdr):
-            for h in REVIEW_HRBPS:
+        for name, col in read_hrbp_header(su_start + 1):
+            for h in hrbp_names:
                 if name.lower() == h.lower():
-                    su_cols[h] = 3 + idx
+                    su_cols[h] = col
         milestones = []
         for i in range(su_start + 2, su_start + 12):
             lbl = norm(cell(i, 2))
@@ -560,33 +569,27 @@ def norm_emp_type(val):
         return "Contractual"
     return "Regular"
 
+def slug(name):
+    return re.sub(r"[^a-z0-9]+", "", str(name).strip().lower()) or "portfolio"
+
 def parse_budget(path):
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     records = []
     used, ignored = [], []
-    # which sheets are detail sheets (per HRBP) vs summary/ignored
-    sheet_to_portfolio = {}
-    for pkey, m in HRBP_DISPLAY_MAP.items():
-        sheet_to_portfolio[m["budgetSheet"].strip().lower()] = pkey
+    portfolio_display = {}                       # portfolio key -> display name
+    fold = {k.strip().lower(): v for k, v in SSC_FOLD.items()}
 
     for sn in wb.sheetnames:
         low = sn.strip().lower()
-        portfolio = None
-        if low in sheet_to_portfolio:
-            portfolio = sheet_to_portfolio[low]
-        elif "ssc ojt" in low or low == "ssc ojt":
-            portfolio = SSC_OJT_PORTFOLIO
-        # skip summary sheets / unknowns
-        if portfolio is None or "summary" in low:
+        if "summary" in low:                     # pivot/summary sheets carry no records
             ignored.append(sn)
             continue
-
         ws = wb[sn]
         rows = [list(r) for r in ws.iter_rows(values_only=True)]
         if not rows:
             ignored.append(sn)
             continue
-        # find header row = first row containing 'position id' / 'position name'
+        # A DETAIL sheet has a header row mentioning position + emp/function.
         hdr_idx = None
         for i, r in enumerate(rows[:6]):
             joined = " ".join(norm(c).lower() for c in r if c is not None)
@@ -594,7 +597,15 @@ def parse_budget(path):
                 hdr_idx = i
                 break
         if hdr_idx is None:
-            hdr_idx = 0
+            ignored.append(sn)                   # not a record sheet
+            continue
+
+        # DATA-DRIVEN: the portfolio IS the sheet name (optional SSC_FOLD merge).
+        display = fold[low] if low in fold else sn.strip()
+        portfolio = slug(display)
+        portfolio_display.setdefault(portfolio, display)
+        is_ojt = "ojt" in low
+
         header = rows[hdr_idx]
         colmap = {}
         for ci, h in enumerate(header):
@@ -624,7 +635,7 @@ def parse_budget(path):
                 "positionLevel": norm(g("positionLevel")) or NOT_AVAILABLE,
                 "positionName": norm(pos_name) or NOT_AVAILABLE,
                 "grade": norm(g("grade")) or NOT_AVAILABLE,
-                "employeeType": norm_emp_type(g("employeeType")) if not (low == "ssc ojt") else "OJT",
+                "employeeType": "OJT" if is_ojt else norm_emp_type(g("employeeType")),
                 "occupancy": occ,
                 # PII masked:  emp code DROPPED entirely; emp name -> stable pseudonym
                 "holder": MASK.employee(emp_name) if occ == "Occupied" else None,
@@ -635,7 +646,7 @@ def parse_budget(path):
         if len(records) - n_before == 0:
             warn("budget sheet %r yielded 0 records" % sn)
     wb.close()
-    return records, used, ignored
+    return records, used, ignored, portfolio_display
 
 
 # ==============================================================================
@@ -722,19 +733,52 @@ def ageing_bucket(a):
 
 
 # ==============================================================================
-# 5. ASSEMBLE per-portfolio summary + KPIs
+# 5. RECONCILE review HRBPs <-> budget portfolios (BY NAME), then ASSEMBLE.
 # ==============================================================================
-def assemble(review, budget_records):
+def reconcile(review, portfolio_display):
+    """Join review HRBP labels to budget portfolios by name. Direct match wins;
+    HRBP_ALIASES is only a fallback. Returns an ordered list of descriptors."""
+    name_to_key = {}
+    for k, disp in portfolio_display.items():
+        name_to_key[disp.strip().lower()] = k
+        name_to_key[k] = k
+    descriptors = {}
+    for L in review.get("hrbpNames", []):
+        target = HRBP_ALIASES.get(L.strip().lower(), L)
+        k = name_to_key.get(target.strip().lower()) or name_to_key.get(slug(target))
+        if k is None:                                    # review-only HRBP
+            k = slug(L)
+            portfolio_display.setdefault(k, L)
+            conf = "review-only"
+        else:
+            direct = L.strip().lower() == portfolio_display.get(k, "").strip().lower()
+            conf = "direct" if direct else "alias"
+        descriptors[k] = {"key": k, "display": portfolio_display.get(k, L),
+                          "reviewLabel": L, "budgetSheet": portfolio_display.get(k, NOT_AVAILABLE),
+                          "confidence": conf, "verify": False}
+    for k, disp in portfolio_display.items():            # budget-only portfolios
+        descriptors.setdefault(k, {"key": k, "display": disp, "reviewLabel": None,
+                                   "budgetSheet": disp, "confidence": "budget-only", "verify": False})
+    return descriptors
+
+def assemble(review, budget_records, portfolio_display):
     portfolios = []
-    # budget-record rollups per portfolio
     by_pf = {}
     for r in budget_records:
         by_pf.setdefault(r["portfolio"], []).append(r)
 
-    for pkey in PORTFOLIO_ORDER:
-        m = HRBP_DISPLAY_MAP[pkey]
+    descriptors = reconcile(review, portfolio_display)
+    # order by budget size desc, then by record count desc
+    def order_key(d):
+        rv = review["hrbps"].get(d["reviewLabel"], {}) if d["reviewLabel"] else {}
+        return (-(rv.get("budget") or 0), -len(by_pf.get(d["key"], [])))
+    ordered = sorted(descriptors.values(), key=order_key)
+    review["_descriptors"] = ordered             # exposed for meta.hrbpMap
+
+    for m in ordered:
+        pkey = m["key"]
         rl = m["reviewLabel"]
-        rv = review["hrbps"].get(rl, {})
+        rv = review["hrbps"].get(rl, {}) if rl else {}
         recs = by_pf.get(pkey, [])
 
         budget = rv.get("budget")
@@ -765,7 +809,8 @@ def assemble(review, budget_records):
         attrition = rv.get("attrition")
 
         # engagement: lowest dept score vs benchmark
-        eng = [e for e in review["engagement"] if e["hrbp"].lower() == rl.lower() and e["score"] is not None]
+        eng = [e for e in review["engagement"]
+               if rl and e["hrbp"].lower() == rl.lower() and e["score"] is not None]
         lowest = min(eng, key=lambda e: e["score"]) if eng else None
 
         portfolios.append({
@@ -913,11 +958,12 @@ def data_quality(tracker_records, budget_records, portfolios, ageing_values):
     # budget side
     miss_grade = sum(1 for r in budget_records if r["grade"] == NOT_AVAILABLE)
     add("Missing grade (budget)", miss_grade, "Budget rows without a usable grade", "low")
-    # duplicate position ids in tracker (position code numeric)
-    add("Verify-flagged HRBP mapping",
-        sum(1 for p in portfolios if p["verify"]),
-        "Khyati/Chanchal/Lincia ↔ Riya/Nisha/Meera mapped by size; correct HRBP_DISPLAY_MAP if known.",
-        "medium")
+    # HRBP joins that relied on the HRBP_ALIASES fallback (not a direct name match)
+    alias_joins = sum(1 for p in portfolios if p.get("confidence") == "alias")
+    if alias_joins:
+        add("Alias-mapped HRBPs", alias_joins,
+            "Review labels joined to budget portfolios via HRBP_ALIASES (names differ). "
+            "Empty HRBP_ALIASES once review and budget use the same names.", "low")
 
     total_fields = n_tr if n_tr else 1
     completeness = round(100 * (1 - (miss_ageing + miss_crit) / (2 * total_fields)), 1) if n_tr else 100.0
@@ -984,8 +1030,9 @@ def main():
           "| initiatives:", len(review["initiatives"]))
 
     print("[2/5] Parsing Budget workbook (record-level)...")
-    budget_records, b_used, b_ignored = parse_budget(p_budget)
+    budget_records, b_used, b_ignored, portfolio_display = parse_budget(p_budget)
     print("      detail sheets used:", b_used)
+    print("      portfolios discovered:", list(portfolio_display.values()))
     print("      records:", len(budget_records))
 
     print("[3/5] Parsing Recruitment Tracker (degraded)...")
@@ -994,16 +1041,15 @@ def main():
           "| numeric ageing present:", len(ageing_values))
 
     print("[4/5] Assembling portfolios + KPIs...")
-    portfolios = assemble(review, budget_records)
+    portfolios = assemble(review, budget_records, portfolio_display)
     kpis = rollup_kpis(portfolios, review)
     actions = build_actions(portfolios)
     dq = data_quality(tracker_records, budget_records, portfolios, ageing_values)
 
     hrbp_map_view = []
-    for pkey in PORTFOLIO_ORDER:
-        m = HRBP_DISPLAY_MAP[pkey]
+    for m in review.get("_descriptors", []):
         hrbp_map_view.append({
-            "display": m["display"], "reviewLabel": m["reviewLabel"],
+            "display": m["display"], "reviewLabel": m["reviewLabel"] or NOT_AVAILABLE,
             "budgetSheet": m["budgetSheet"], "confidence": m["confidence"],
             "verify": m["verify"],
         })
@@ -1066,11 +1112,10 @@ def main():
     print("  Engagement depts :", len(review["engagement"]))
     print("  Initiatives      :", len(review["initiatives"]))
     print("  Derived actions  :", len(actions))
-    print("  HRBP mapping applied (canonical <- review / budget):")
+    print("  HRBP join (portfolio <- review label) [match type]:")
     for v in hrbp_map_view:
-        flag = "  ⚠ VERIFY" if v["verify"] else ""
-        print("     %-9s <- review:%-6s budget:%-9s [%s]%s"
-              % (v["display"], v["reviewLabel"], v["budgetSheet"], v["confidence"], flag))
+        print("     %-12s <- review:%-10s [%s]"
+              % (v["display"], v["reviewLabel"], v["confidence"]))
     print("  Data-quality completeness :", dq["completeness"], "%")
     if WARNINGS:
         print("  Warnings:")

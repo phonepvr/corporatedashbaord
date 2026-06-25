@@ -71,35 +71,31 @@ own right; totals are never force-joined.
 
 ---
 
-## (b) The `HRBP_DISPLAY_MAP` — and the **VERIFY** note
+## (b) HRBP reconciliation — data-driven (no mapping to maintain)
 
-The HRBPs are labelled differently in every file and share **no clean join key**:
+Portfolios are **discovered from the data**, not hard-coded:
 
-* Monthly Review columns: `Aarav, Meera, Nisha, Riya, Kabir`
-* Budget sheet names: `Dhruv, Shijumon, Khyati, Chanchal, Lincia` (+ `SSC OJT`)
-* Recruitment Tracker: scrambled placeholders (unusable as a key)
+* **Budget workbook** — every detail sheet becomes a portfolio, and the **display name is the
+  sheet name** itself. Add/rename/remove HRBPs just by changing the sheets.
+* **Monthly Review** — the HRBP columns are read from the sheet's own header rows and **joined to
+  the budget portfolios by name** (case-insensitive, trimmed).
+* **Recruitment Tracker** — categoricals are scrambled, so it is never used as a join key.
 
-`build/build_data.py` reconciles them with one editable constant, `HRBP_DISPLAY_MAP`, mapping
-each source onto five canonical portfolios with the display names **Dhruv, Chanchal, Lincia,
-Khyati, Shiju** (plus an **All HRBPs** rollup). The default is a **size-ranked heuristic**:
+In real data the budget sheets and the review columns use the **same** display names, so the join
+is **direct** and there is nothing to verify — the selector simply lists whatever portfolios the
+workbooks contain.
 
-| Display | ← Review | ← Budget sheet | Confidence |
-|---|---|---|---|
-| **Dhruv** | Aarav | Dhruv (+ SSC OJT) | high (both largest) |
-| **Shiju** | Kabir | Shijumon | high (≈57–58, near-exact size) |
-| **Khyati** | Riya | Khyati | ⚠ **unverified** (mapped by descending size) |
-| **Chanchal** | Nisha | Chanchal | ⚠ **unverified** |
-| **Lincia** | Meera | Lincia | ⚠ **unverified** |
+`HRBP_ALIASES` (top of `build/build_data.py`, mirrored in `js/upload.js`) is an **optional
+fallback**, used only when a review label does not directly match a budget sheet name. It ships
+with entries for the bundled demo workbooks (whose review uses `Aarav/Meera/…` while the demo
+budget uses `Dhruv/Shijumon/…`); for real data with matching names you can leave it empty — the
+direct match wins and the aliases are never consulted. `SSC_FOLD` (also optional, default empty)
+lets you fold a sheet such as a shared trainee pool into another portfolio instead of letting it
+stand alone.
 
-> ⚠ **VERIFY:** the Khyati/Chanchal/Lincia ↔ Riya/Nisha/Meera assignment is a positional/size
-> assumption because the true mapping is unknown. If you know the correct pairing, edit the
-> single `HRBP_DISPLAY_MAP` entry at the top of `build/build_data.py` (and the mirrored `MAP` in
-> `js/upload.js` if you use the upload path). The dashboard surfaces this flag in the **Data load
-> & source summary** panel and the **Data Quality** section.
-
-`SSC OJT` (trainee pool) is folded into the Dhruv portfolio, matching the review’s “Aarav for
-SSC” attribution. Uploaded data with different/additional HRBPs is added to the selector
-dynamically.
+The **Data load & source summary** panel shows the live join for each portfolio with its match
+type (`direct` / `alias` / `budget-only`), so you can always see exactly how the workbooks were
+reconciled.
 
 ---
 

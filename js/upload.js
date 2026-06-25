@@ -9,17 +9,13 @@
 
 var NA = "Not Available";
 var TAT = 45;
-var REVIEW_HRBPS = ["Aarav", "Meera", "Nisha", "Riya", "Kabir"];
-// Mirror of HRBP_DISPLAY_MAP (keep in sync with build_data.py)
-var MAP = [
-  { key: "dhruv", display: "Dhruv", reviewLabel: "Aarav", budgetSheet: "Dhruv", confidence: "high", verify: false },
-  { key: "khyati", display: "Khyati", reviewLabel: "Riya", budgetSheet: "Khyati", confidence: "unverified", verify: true },
-  { key: "chanchal", display: "Chanchal", reviewLabel: "Nisha", budgetSheet: "Chanchal", confidence: "unverified", verify: true },
-  { key: "lincia", display: "Lincia", reviewLabel: "Meera", budgetSheet: "Lincia", confidence: "unverified", verify: true },
-  { key: "shiju", display: "Shiju", reviewLabel: "Kabir", budgetSheet: "Shijumon", confidence: "high", verify: false },
-];
-var ORDER = ["dhruv", "chanchal", "lincia", "khyati", "shiju"];
-var SSC_PORTFOLIO = "dhruv";
+// DATA-DRIVEN: portfolios come from the budget sheet names; review HRBPs are
+// read from the sheet headers and joined by name. HRBP_ALIASES is only a
+// fallback when a review label does not directly match a budget sheet name
+// (kept here so the bundled demo still parses). Keep in sync with build_data.py.
+var HRBP_ALIASES = { "aarav": "Dhruv", "kabir": "Shijumon", "riya": "Khyati", "nisha": "Chanchal", "meera": "Lincia" };
+var SSC_FOLD = {};   // budget sheet name (lower) -> target portfolio display name
+function slug(s) { return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, "") || "portfolio"; }
 
 var baked = window.DASHBOARD_DATA;   // keep a reference to restore
 var files = {};
@@ -86,12 +82,25 @@ function parseReview(wb, MASK) {
   function cell(r, c) { return (rows[r] && rows[r][c] != null) ? rows[r][c] : null; }
   function secRow(label) { for (var i = 0; i < rows.length; i++) if (norm(cell(i, 1)).toLowerCase() === label.toLowerCase()) return i; return -1; }
   function rowLabel(i) { return norm(cell(i, 2)); }
-  var out = { hrbps: {}, engagement: [], initiatives: [], benchmark: null, speakUpMilestones: [] };
-  REVIEW_HRBPS.forEach(function (h) { out.hrbps[h] = {}; });
+  // Discover HRBP names from a section header row (span=1 normally; 3 in Recruitment).
+  function readHrbpHeader(headerRow, span, startCol) {
+    span = span || 1; var c = startCol || 3, pairs = [];
+    while (c < 40) {
+      var v = norm(cell(headerRow, c));
+      if (!v || v.toLowerCase() === "total" || v.toLowerCase() === "grand total") break;
+      pairs.push([v, c]); c += span;
+    }
+    return pairs;
+  }
+  var out = { hrbps: {}, engagement: [], initiatives: [], benchmark: null, speakUpMilestones: [], hrbpNames: [] };
 
-  // headcount
+  // headcount (authoritative HRBP name list)
   var hc = secRow("Headcount Overview");
-  var hcCols = { Aarav: 3, Meera: 4, Nisha: 5, Riya: 6, Kabir: 7 };
+  var hcPairs = hc >= 0 ? readHrbpHeader(hc + 1) : [];
+  var REVIEW_HRBPS = hcPairs.map(function (p) { return p[0]; });
+  out.hrbpNames = REVIEW_HRBPS;
+  var hcCols = {}; hcPairs.forEach(function (p) { hcCols[p[0]] = p[1]; });
+  REVIEW_HRBPS.forEach(function (h) { out.hrbps[h] = {}; });
   var hcF = [["Total Position 2026", "budget"], ["Active Employees", "active"], ["Joining's in June", "joiningsJune"],
     ["Exits in June", "exitsJune"], ["Joining's YTD", "joiningsYTD"], ["Exits YTD", "exitsYTD"],
     ["Current Positions", "wipCurrent"], ["Future Positions", "future"], ["On Hold", "onHold"],
@@ -112,7 +121,7 @@ function parseReview(wb, MASK) {
   // recruitment
   var rec = secRow("Recruitment Overview");
   var recF = { "wip": "wip", "offered": "offered", "to be offered": "toBeOffered", "joined 2026": "joined", "offer declined": "offerDeclined" };
-  var recCols = { Aarav: 3, Meera: 6, Nisha: 9, Riya: 12, Kabir: 15 };
+  var recCols = {}; if (rec >= 0) readHrbpHeader(rec + 1, 3).forEach(function (p) { recCols[p[0]] = p[1]; });
   REVIEW_HRBPS.forEach(function (h) { out.hrbps[h].recruitment = {}; });
   if (rec >= 0) for (var ri = rec + 1; ri < rec + 9; ri++) {
     var l = rowLabel(ri).toLowerCase(); var field = recF[l]; if (!field) continue;
@@ -123,7 +132,7 @@ function parseReview(wb, MASK) {
   }
   // aging
   var ag = secRow("Aging Overview");
-  var agCols = { Aarav: 3, Meera: 4, Nisha: 5, Riya: 6, Kabir: 7 };
+  var agCols = {}; if (ag >= 0) readHrbpHeader(ag + 1).forEach(function (p) { agCols[p[0]] = p[1]; });
   var agF = { "wip": "wip", "0-30": "b0_30", "30-60": "b30_60", "60-90": "b60_90", "90 +": "b90" };
   REVIEW_HRBPS.forEach(function (h) { out.hrbps[h].aging = {}; });
   if (ag >= 0) for (var ai = ag + 1; ai < ag + 9; ai++) {
@@ -165,7 +174,7 @@ function parseReview(wb, MASK) {
       trRows.push({ rowLabel: norm(cell(ti, 2)), totalHeadcount: Math.round(tot), trainingDays: d != null ? Math.round(d * 100) / 100 : null, upcoming: norm(cell(ti, 10)) || NA });
     }
     REVIEW_HRBPS.forEach(function (h) { for (var k = 0; k < trRows.length; k++) if (trRows[k].rowLabel.toLowerCase().indexOf(h.toLowerCase()) >= 0) { out.hrbps[h].training = trRows[k]; break; } });
-    if (!out.hrbps.Aarav.training && trRows.length) out.hrbps.Aarav.training = trRows[0];
+    if (REVIEW_HRBPS.length && !out.hrbps[REVIEW_HRBPS[0]].training && trRows.length) out.hrbps[REVIEW_HRBPS[0]].training = trRows[0];
   }
   // pms
   var pms = secRow("PMS");
@@ -176,8 +185,7 @@ function parseReview(wb, MASK) {
   // speakup
   var su = -1; for (var s1 = 0; s1 < rows.length; s1++) { var t1 = norm(cell(s1, 1)).toLowerCase(); if (t1.indexOf("speak") >= 0 && t1.indexOf("up") >= 0) { su = s1; break; } }
   if (su >= 0) {
-    var hdr = [3, 4, 5, 6, 7].map(function (c) { return norm(cell(su + 1, c)); });
-    var suCols = {}; hdr.forEach(function (nm, idx) { REVIEW_HRBPS.forEach(function (h) { if (nm.toLowerCase() === h.toLowerCase()) suCols[h] = 3 + idx; }); });
+    var suCols = {}; readHrbpHeader(su + 1).forEach(function (p) { REVIEW_HRBPS.forEach(function (h) { if (p[0].toLowerCase() === h.toLowerCase()) suCols[h] = p[1]; }); });
     for (var mi2 = su + 2; mi2 < su + 12; mi2++) {
       var ml = norm(cell(mi2, 2)); if (!ml) continue; if (ml.toLowerCase().indexOf("employee listening") >= 0) break;
       var st = {}; Object.keys(suCols).forEach(function (h) { var v = norm(cell(mi2, suCols[h])); st[h] = v || "Pending"; });
@@ -230,15 +238,18 @@ function mapHeader(h) {
 function empType(v, isOjt) { if (isOjt) return "OJT"; if (blank(v)) return "Regular"; var s = String(v).toLowerCase(); if (s.indexOf("ojt") >= 0) return "OJT"; if (s.indexOf("trainee") >= 0) return "Trainee"; if (s.indexOf("contract") >= 0 || s.indexOf("bpo") >= 0) return "Contractual"; return "Regular"; }
 function occVal(v, name) { if (!blank(v)) { var s = String(v).toLowerCase(); if (s.indexOf("occup") >= 0) return "Occupied"; if (s.indexOf("vacant") >= 0) return "Vacant"; } return blank(name) ? "Vacant" : "Occupied"; }
 function parseBudget(wb, MASK) {
-  var s2p = {}; MAP.forEach(function (m) { s2p[m.budgetSheet.trim().toLowerCase()] = m.key; });
-  var records = [], used = [], ignored = [];
+  // DATA-DRIVEN: each detail sheet is a portfolio named after the sheet.
+  var fold = {}; Object.keys(SSC_FOLD).forEach(function (k) { fold[k.trim().toLowerCase()] = SSC_FOLD[k]; });
+  var records = [], used = [], ignored = [], portfolioDisplay = {};
   wb.SheetNames.forEach(function (sn) {
-    var lo = sn.trim().toLowerCase(), pf = s2p[lo];
-    if (!pf && lo.indexOf("ssc ojt") >= 0) pf = SSC_PORTFOLIO;
-    if (!pf || lo.indexOf("summary") >= 0) { ignored.push(sn); return; }
+    var lo = sn.trim().toLowerCase();
+    if (lo.indexOf("summary") >= 0) { ignored.push(sn); return; }
     var rows = sheetRows(wb, sn); if (!rows.length) { ignored.push(sn); return; }
-    var hi = 0;
+    var hi = -1;
     for (var i = 0; i < Math.min(6, rows.length); i++) { var joined = (rows[i] || []).map(function (c) { return norm(c).toLowerCase(); }).join(" "); if (joined.indexOf("position") >= 0 && (joined.indexOf("emp") >= 0 || joined.indexOf("function") >= 0)) { hi = i; break; } }
+    if (hi < 0) { ignored.push(sn); return; }       // not a record sheet
+    var display = fold[lo] || sn.trim(), pf = slug(display), isOjt = lo.indexOf("ojt") >= 0;
+    if (!(pf in portfolioDisplay)) portfolioDisplay[pf] = display;
     var colmap = {}; (rows[hi] || []).forEach(function (h, ci) { var f = mapHeader(h); if (f && !(f in colmap)) colmap[f] = ci; });
     for (var r = hi + 1; r < rows.length; r++) {
       var row = rows[r] || []; if (!row.some(function (c) { return !blank(c); })) continue;
@@ -248,12 +259,12 @@ function parseBudget(wb, MASK) {
       records.push({ portfolio: pf, plant: norm(g("plant")) || NA, "function": norm(g("function")) || NA,
         department: norm(g("department")) || NA, subDepartment: norm(g("subDepartment")) || NA,
         positionLevel: norm(g("positionLevel")) || NA, positionName: norm(g("positionName")) || NA,
-        grade: norm(g("grade")) || NA, employeeType: empType(g("employeeType"), lo === "ssc ojt"),
+        grade: norm(g("grade")) || NA, employeeType: empType(g("employeeType"), isOjt),
         occupancy: occ, holder: occ === "Occupied" ? MASK.emp(name) : null, remarks: norm(g("remarks")) || "" });
     }
     used.push(sn);
   });
-  return { records: records, used: used, ignored: ignored };
+  return { records: records, used: used, ignored: ignored, portfolioDisplay: portfolioDisplay };
 }
 
 /* ============================ TRACKER PARSER ============================ */
@@ -283,11 +294,33 @@ function parseTracker(wb, MASK) {
 }
 function bucket(a) { if (a == null) return NA; a = +a; return a <= 30 ? "0-30" : a <= 60 ? "30-60" : a <= 90 ? "60-90" : a <= 120 ? "90-120" : "120+"; }
 
-/* ============================ ASSEMBLE ============================ */
+/* ============================ RECONCILE + ASSEMBLE ============================ */
+function reconcile(review, portfolioDisplay) {
+  var nameToKey = {}; Object.keys(portfolioDisplay).forEach(function (k) { nameToKey[portfolioDisplay[k].trim().toLowerCase()] = k; nameToKey[k] = k; });
+  var descriptors = {};
+  (review.hrbpNames || []).forEach(function (L) {
+    var target = HRBP_ALIASES[L.trim().toLowerCase()] || L;
+    var k = nameToKey[target.trim().toLowerCase()] || nameToKey[slug(target)];
+    var conf;
+    if (k == null) { k = slug(L); portfolioDisplay[k] = portfolioDisplay[k] || L; conf = "review-only"; }
+    else { conf = (L.trim().toLowerCase() === (portfolioDisplay[k] || "").trim().toLowerCase()) ? "direct" : "alias"; }
+    descriptors[k] = { key: k, display: portfolioDisplay[k] || L, reviewLabel: L, budgetSheet: portfolioDisplay[k] || NA, confidence: conf, verify: false };
+  });
+  Object.keys(portfolioDisplay).forEach(function (k) {
+    if (!descriptors[k]) descriptors[k] = { key: k, display: portfolioDisplay[k], reviewLabel: null, budgetSheet: portfolioDisplay[k], confidence: "budget-only", verify: false };
+  });
+  return descriptors;
+}
 function assemble(review, budget) {
   var byPf = {}; budget.records.forEach(function (r) { (byPf[r.portfolio] = byPf[r.portfolio] || []).push(r); });
-  var portfolios = ORDER.map(function (pkey) {
-    var m = MAP.filter(function (x) { return x.key === pkey; })[0], rl = m.reviewLabel, rv = review.hrbps[rl] || {}, recs = byPf[pkey] || [];
+  var descriptors = reconcile(review, budget.portfolioDisplay);
+  var ordered = Object.keys(descriptors).map(function (k) { return descriptors[k]; }).sort(function (a, b) {
+    var ra = review.hrbps[a.reviewLabel] || {}, rb = review.hrbps[b.reviewLabel] || {};
+    return (rb.budget || 0) - (ra.budget || 0) || (byPf[b.key] || []).length - (byPf[a.key] || []).length;
+  });
+  review._descriptors = ordered;
+  var portfolios = ordered.map(function (m) {
+    var pkey = m.key, rl = m.reviewLabel, rv = (rl && review.hrbps[rl]) || {}, recs = byPf[pkey] || [];
     var budgetN = rv.budget, active = rv.active, vac = (budgetN != null && active != null) ? budgetN - active : null;
     var rec = rv.recruitment || {};
     function rs(k) { return rec[k] ? rec[k].total : 0; }
@@ -295,7 +328,7 @@ function assemble(review, budget) {
     var totFun = openP + joined + rs("offerDeclined");
     var aging = rv.aging || {}, wip = aging.wip || 0, b90 = aging.b90 || 0;
     var pms = rv.pms || {}, goal = pms.goalSetting;
-    var eng = review.engagement.filter(function (e) { return e.hrbp && e.hrbp.toLowerCase() === rl.toLowerCase() && e.score != null; });
+    var eng = review.engagement.filter(function (e) { return rl && e.hrbp && e.hrbp.toLowerCase() === rl.toLowerCase() && e.score != null; });
     var lowest = eng.length ? eng.reduce(function (a, b) { return a.score < b.score ? a : b; }) : null;
     return { key: pkey, display: m.display, reviewLabel: rl, budgetSheet: m.budgetSheet, confidence: m.confidence, verify: m.verify,
       budget: budgetN, active: active, vacancy: vac, vacancyPct: (vac != null && budgetN) ? Math.round(vac / budgetN * 1000) / 10 : null,
@@ -357,8 +390,9 @@ function dataQuality(tracker, budget, portfolios) {
     { type: "Scrambled categoricals (tracker)", count: n, detail: "Approval, Function, Grade, Location, Status, Ageing Bucket, Sourcing anonymised to placeholders — not charted as meaningful.", severity: "high" },
     { type: "Missing numeric ageing", count: missAge, detail: "Tracker rows with no ageing value", severity: "medium" },
     { type: "Missing criticality", count: missCrit, detail: "Criticality/Priority partly scrambled", severity: "medium" },
-    { type: "Verify-flagged HRBP mapping", count: portfolios.filter(function (p) { return p.verify; }).length, detail: "Khyati/Chanchal/Lincia ↔ Riya/Nisha/Meera mapped by size.", severity: "medium" },
   ];
+  var aliasN = portfolios.filter(function (p) { return p.confidence === "alias"; }).length;
+  if (aliasN) issues.push({ type: "Alias-mapped HRBPs", count: aliasN, detail: "Review labels joined to budget portfolios via HRBP_ALIASES (names differ).", severity: "low" });
   return { completeness: n ? Math.round((1 - (missAge + missCrit) / (2 * n)) * 1000) / 10 : 100,
     trackerRows: n, budgetRows: budget.records.length, issues: issues, actionRequired: issues.filter(function (i) { return i.severity === "high"; }).length };
 }
@@ -379,14 +413,15 @@ function parseAll() {
       var MASK = new Masker();
       // require review for the core; fall back if missing
       var review = b.review ? parseReview(b.review, MASK) : reviewFromBaked();
-      var budget = b.budget ? parseBudget(b.budget, MASK) : { records: baked.budgetRecords, used: baked.meta.budgetSheetsUsed, ignored: [] };
+      var bakedPD = {}; baked.portfolios.forEach(function (p) { bakedPD[p.key] = p.display; });
+      var budget = b.budget ? parseBudget(b.budget, MASK) : { records: baked.budgetRecords, used: baked.meta.budgetSheetsUsed, ignored: [], portfolioDisplay: bakedPD };
       var tracker = b.tracker ? parseTracker(b.tracker, MASK) : { records: baked.recruitmentRecords, ages: [], used: [], ignored: [] };
       var portfolios = assemble(review, budget);
       var data = {
         meta: Object.assign({}, baked.meta, {
           generatedAt: new Date().toISOString().slice(0, 10) + " (uploaded)",
           budgetSheetsUsed: budget.used, ignoredSheets: budget.ignored.concat(tracker.ignored),
-          hrbpMap: MAP.map(function (m) { return { display: m.display, reviewLabel: m.reviewLabel, budgetSheet: m.budgetSheet, confidence: m.confidence, verify: m.verify }; }),
+          hrbpMap: (review._descriptors || []).map(function (m) { return { display: m.display, reviewLabel: m.reviewLabel || NA, budgetSheet: m.budgetSheet, confidence: m.confidence, verify: m.verify }; }),
           benchmark: review.benchmark || 6.19,
         }),
         kpis: rollup(portfolios, review), portfolios: portfolios,
@@ -416,8 +451,8 @@ function parseAll() {
 }
 function reviewFromBaked() {
   // reconstruct a minimal review object from baked portfolios (when only budget/tracker uploaded)
-  var hrbps = {}; baked.portfolios.forEach(function (p) { hrbps[p.reviewLabel] = { budget: p.budget, active: p.active, joiningsJune: p.joiningsJune, exitsJune: p.exitsJune, joiningsYTD: p.joiningsYTD, exitsYTD: p.exitsYTD, future: p.future, onHold: p.onHold, delimit: p.delimit, attrition: p.attrition, attritionInsight: p.attritionInsight, recruitment: p.recruitment, aging: p.aging, criticalCases: p.criticalCases, pms: p.pms, training: p.training, orgChart: p.orgChart }; });
-  return { hrbps: hrbps, engagement: baked.engagement, initiatives: baked.initiatives, benchmark: baked.meta.benchmark, speakUpMilestones: baked.speakUpMilestones };
+  var hrbps = {}, names = []; baked.portfolios.forEach(function (p) { if (!p.reviewLabel) return; names.push(p.reviewLabel); hrbps[p.reviewLabel] = { budget: p.budget, active: p.active, joiningsJune: p.joiningsJune, exitsJune: p.exitsJune, joiningsYTD: p.joiningsYTD, exitsYTD: p.exitsYTD, future: p.future, onHold: p.onHold, delimit: p.delimit, attrition: p.attrition, attritionInsight: p.attritionInsight, recruitment: p.recruitment, aging: p.aging, criticalCases: p.criticalCases, pms: p.pms, training: p.training, orgChart: p.orgChart }; });
+  return { hrbps: hrbps, hrbpNames: names, engagement: baked.engagement, initiatives: baked.initiatives, benchmark: baked.meta.benchmark, speakUpMilestones: baked.speakUpMilestones };
 }
 function guard(data, MASK) {
   var leaks = [], names = Object.keys(MASK.e).concat(Object.keys(MASK.c));
