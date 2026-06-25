@@ -1,0 +1,13 @@
+# Keep source HR workbooks OUT of the repo — they may contain real PII.
+# The dashboard ships only the masked, baked js/data.js (safe to publish).
+*.xlsx
+*.xls
+*.xlsm
+data/*.xlsx
+data/*.xls
+
+# misc
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
