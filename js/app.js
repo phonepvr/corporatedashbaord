@@ -46,9 +46,17 @@ function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function 
   return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
 // ---------- RAG semantics (colour never the only signal) ----------
+// Intervention red aligns to AM/NS Smart Red; neutral/info uses a legible blue.
 var RAG = {
-  green: "#1e8a5a", amber: "#c79100", orange: "#d9710b",
-  red: "#cc3340", darkred: "#8e1b27", grey: "#7a8699", blue: "#2d6cb5",
+  green: "#2f8f43", amber: "#c79100", orange: "#d9710b",
+  red: "#E52726", darkred: "#9b1414", grey: "#6f7176", blue: "#2b6cb0",
+  ink: "#171717", brand: "#E52726",
+};
+// AM/NS brand chart palette — black/red dominant, secondary accents (never dominant).
+var BRAND = {
+  ink: "#171717", inkSoft: "#52525a", red: "#E52726", redSoft: "#f59b9a",
+  yellow: "#FFA700", green: "#C0F353", blue: "#A8E0FF",
+  series: ["#171717", "#E52726", "#FFA700", "#7BB23B", "#5BA9DA", "#9b1414", "#9a9aa0"],
 };
 function ragVacancy(p) { if (p == null) return "grey"; return p < 10 ? "green" : p <= 20 ? "amber" : "red"; }
 function ragAttrition(p) { if (p == null) return "grey"; return p < 3 ? "green" : p <= 5 ? "amber" : "red"; }
@@ -515,8 +523,8 @@ function renderComparison() {
   chart("chBudgetActive", {
     type: "bar",
     data: { labels: labels, datasets: [
-      { label: "Budget", data: ps.map(function (p) { return p.budget; }), backgroundColor: "#9db8da" },
-      { label: "Active", data: ps.map(function (p) { return p.active; }), backgroundColor: RAG.blue }] },
+      { label: "Budget", data: ps.map(function (p) { return p.budget; }), backgroundColor: "#d2d2d6" },
+      { label: "Active", data: ps.map(function (p) { return p.active; }), backgroundColor: BRAND.ink }] },
     options: baseOpts({ y: { beginAtZero: true } }),
   });
   // vacancy sorted desc, RAG coloured
@@ -612,7 +620,7 @@ function renderHeadcount() {
     type: "bar",
     data: { labels: top.map(function (x) { return x.fn; }), datasets: [
       { label: "Occupied", data: top.map(function (x) { return byFn[x.fn].occupied; }), backgroundColor: RAG.blue, stack: "s" },
-      { label: "Vacant", data: top.map(function (x) { return byFn[x.fn].vacant; }), backgroundColor: "#e6a23c", stack: "s" }] },
+      { label: "Vacant", data: top.map(function (x) { return byFn[x.fn].vacant; }), backgroundColor: RAG.red, stack: "s" }] },
     options: baseOpts({ x: { stacked: true, beginAtZero: true }, y: { stacked: true } }, "y"),
   });
   // occupied vs vacant donut
@@ -620,7 +628,7 @@ function renderHeadcount() {
   var vac = recs.length - occ;
   chart("chOccVac", {
     type: "doughnut",
-    data: { labels: ["Occupied", "Vacant"], datasets: [{ data: [occ, vac], backgroundColor: [RAG.blue, "#e6a23c"] }] },
+    data: { labels: ["Occupied", "Vacant"], datasets: [{ data: [occ, vac], backgroundColor: [BRAND.ink, RAG.red] }] },
     options: { plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { label: function (c) {
       return c.label + ": " + fmt(c.raw) + " (" + Math.round(c.raw / (occ + vac) * 100) + "%)"; } } } } },
   });
@@ -629,7 +637,7 @@ function renderHeadcount() {
   chart("chEmpType", {
     type: "bar",
     data: { labels: Object.keys(byType), datasets: [{ label: "Positions", data: Object.values(byType),
-      backgroundColor: [RAG.blue, RAG.green, RAG.orange, RAG.grey, "#9b59b6"] }] },
+      backgroundColor: BRAND.series }] },
     options: baseOpts({ y: { beginAtZero: true } }),
   });
   // grade pyramid
@@ -637,7 +645,7 @@ function renderHeadcount() {
   var gk = Object.keys(byGrade).sort();
   chart("chGrade", {
     type: "bar",
-    data: { labels: gk, datasets: [{ label: "Positions", data: gk.map(function (k) { return byGrade[k]; }), backgroundColor: RAG.brand || "#2d6cb5" }] },
+    data: { labels: gk, datasets: [{ label: "Positions", data: gk.map(function (k) { return byGrade[k]; }), backgroundColor: BRAND.ink }] },
     options: baseOpts({ x: { beginAtZero: true } }, "y"),
   });
   renderHcHeat(recs);
@@ -731,14 +739,14 @@ function renderFunnel() {
   chart("chFunnel", {
     type: "bar",
     data: { labels: fl, datasets: [{ label: "Count", data: fv,
-      backgroundColor: ["#9db8da", "#6c98c8", RAG.blue, RAG.green] }] },
+      backgroundColor: ["#bdbdc2", BRAND.yellow, RAG.red, BRAND.ink] }] },
     options: baseOpts({ x: { beginAtZero: true } }, "y", function (ctx) {
       var tot = fv[0] || 1; return ctx.raw + " roles · " + Math.round(ctx.raw / tot * 100) + "% of WIP"; }),
   });
   chart("chSourcing", {
     type: "doughnut",
     data: { labels: ["RPO", "Consultant", "Other (ER/TA/Internal)"], datasets: [{
-      data: [sourcing.rpo, sourcing.consultant, sourcing.other], backgroundColor: [RAG.blue, RAG.orange, RAG.green] }] },
+      data: [sourcing.rpo, sourcing.consultant, sourcing.other], backgroundColor: [BRAND.ink, RAG.red, BRAND.yellow] }] },
     options: { plugins: { legend: { position: "bottom" } } },
   });
   // stage by hrbp stacked
@@ -746,8 +754,8 @@ function renderFunnel() {
   chart("chStageByHrbp", {
     type: "bar",
     data: { labels: sp.map(function (p) { return p.display; }), datasets: [
-      ds("WIP", sp, "wip", "#9db8da"), ds("To Be Offered", sp, "toBeOffered", "#6c98c8"),
-      ds("Offered", sp, "offered", RAG.blue), ds("Joined", sp, "joined", RAG.green)] },
+      ds("WIP", sp, "wip", "#bdbdc2"), ds("To Be Offered", sp, "toBeOffered", BRAND.yellow),
+      ds("Offered", sp, "offered", RAG.red), ds("Joined", sp, "joined", BRAND.ink)] },
     options: baseOpts({ x: { stacked: true }, y: { stacked: true, beginAtZero: true } }),
   });
   // position type & criticality from tracker
@@ -977,14 +985,14 @@ function renderInitiatives() {
   var byMonth = MONTHS.map(function (m) { return inits.filter(function (x) { return x.month === m; }).length; });
   chart("chInitMonth", {
     type: "bar",
-    data: { labels: MONTHS, datasets: [{ label: "Events", data: byMonth, backgroundColor: RAG.accent || "#6c4cd1" }] },
+    data: { labels: MONTHS, datasets: [{ label: "Events", data: byMonth, backgroundColor: BRAND.ink }] },
     options: baseOpts({ y: { beginAtZero: true } }),
   });
   var byCat = countByField(inits, "category");
   chart("chInitCat", {
     type: "doughnut",
     data: { labels: Object.keys(byCat), datasets: [{ data: Object.values(byCat),
-      backgroundColor: [RAG.blue, RAG.green, RAG.orange, RAG.amber, RAG.red, "#6c4cd1"] }] },
+      backgroundColor: BRAND.series }] },
     options: { plugins: { legend: { position: "bottom" } } },
   });
   // coverage heatmap portfolio × month (always full set)
@@ -1364,9 +1372,12 @@ function buildPrint() {
     }).join("") + "</div>";
   }
   function pHead(title, sub) {
-    return "<div class='p-head'><div><h1>" + esc(title) + "</h1><div class='p-sub'>" + esc(sub) + "</div></div>" +
+    return "<div class='p-head'><div>" +
+      "<div class='p-brand'>AM<span class='sl'>/</span>NS <span style='font-weight:500;font-size:9px;color:#cfcfcf'>ArcelorMittal Nippon Steel India</span></div>" +
+      "<h1>" + esc(title) + "</h1><div class='p-sub'>" + esc(sub) + "</div></div>" +
       "<div class='p-meta'>" + esc(DATA.meta.title) + "<br/>Generated " + esc(DATA.meta.generatedAt) + "</div></div>";
   }
+  var TAGLINE = "<span>SMARTER STEELS<b>.</b> BRIGHTER FUTURES<b>.</b></span>";
 
   // ----- Page 1: executive summary (whole org) -----
   html += "<section class='print-page'>";
@@ -1397,7 +1408,7 @@ function buildPrint() {
     });
     html += "</tbody></table>";
   }
-  html += "<div class='p-foot'>Portfolio Risk Index is a workload/risk indicator — not an assessment of HRBP performance. Confidential: masked HR data.</div></section>";
+  html += "<div class='p-foot'><span>Portfolio Risk Index is a workload/risk indicator — not an assessment of HRBP performance. Confidential: masked HR data.</span>" + TAGLINE + "</div></section>";
 
   // ----- One page per portfolio -----
   ps.forEach(function (p) {
@@ -1439,7 +1450,7 @@ function buildPrint() {
         pa.map(function (a) { return "<tr><td>" + esc(a.priority) + "</td><td>" + esc(a.theme) + "</td><td>" + esc(a.recommendation) + "</td><td>" + esc(a.owner) + "</td></tr>"; }).join("") +
         "</tbody></table>";
     }
-    html += "<div class='p-foot'>Confidential: masked HR data. Portfolio review — not an individual performance comparison.</div></section>";
+    html += "<div class='p-foot'><span>Confidential: masked HR data. Portfolio review — not an individual performance comparison.</span>" + TAGLINE + "</div></section>";
   });
   root.innerHTML = html;
 }
