@@ -186,11 +186,59 @@ App.init = function () {
   buildCompareSelectors();
   wireControls();
   renderSourceSummary();
+  decorateInfo();
   applyView();
   setVisibility();
   setNavActive();
   App.fullRender();
 };
+
+/* ---------- self-explanatory "i" affordances on every visual ---------- */
+var CHART_INFO = {
+  chBudgetActive: "Budget vs Active headcount per portfolio. Budget = Total Position 2026 (approved plan); Active = employees on roll. The gap between the two bars is the vacancy.",
+  chVacancy: "Vacancy % = (Budget − Active) ÷ Budget, per portfolio, sorted highest first. RAG: green <10%, amber 10–20%, red >20%.",
+  chJoinExit: "Joinings YTD vs Exits YTD per portfolio. When exits exceed joinings the portfolio is shrinking (negative net movement).",
+  chAttrition: "Attrition % per portfolio = exits ÷ active over the period. The dashed line is the company (active-weighted) average. RAG: green <3%, amber 3–5%, red >5%.",
+  chRisk: "Portfolio Risk Index (0–100): weighted blend of Vacancy 25, Ageing 25, Attrition 20, Hiring load 15, PMS pending 10, Engagement 5 — each scaled to the highest portfolio. A workload/risk indicator, not an assessment of HRBP performance.",
+  chFnGap: "Occupied vs Vacant positions by function (budget records), sorted by the vacancy gap. Vacant = a budgeted position with no current employee.",
+  chOccVac: "Share of budgeted positions in the current selection that are Occupied vs Vacant.",
+  chEmpType: "Count of budgeted positions by employee type (Regular / Trainee / OJT / Contractual).",
+  chGrade: "Count of budgeted positions by grade band (grouped on the grade-code prefix).",
+  chFunnel: "Recruitment pipeline counts from the Monthly Review: WIP → To-Be-Offered → Offered → Joined. The % in the tooltip is share of WIP.",
+  chSourcing: "Sourcing-channel mix across the pipeline: RPO, Consultant, and Other (ER / TA / Internal Movement).",
+  chStageByHrbp: "Pipeline composition (WIP / To-Be-Offered / Offered / Joined) stacked per portfolio.",
+  chPosType: "New vs Replacement positions and criticality 1/2/3, from the Recruitment Tracker. Some categorical fields here are degraded by source anonymisation and are flagged as such.",
+  chAgeBuckets: "Open roles (WIP) split into ageing buckets per portfolio — 0–30 / 30–60 / 60–90 / 90+ days (Monthly Review Aging Overview).",
+  chAgeHist: "Distribution of open-role ageing in days (numeric Ageing field from the Recruitment Tracker). TAT breach is assumed beyond 45 days.",
+  chMovement: "Joinings vs Exits (June and YTD) with a net-movement line. Net = Joinings − Exits.",
+  chWaterfall: "Workforce movement YTD: Opening active + Joinings − Exits = Closing active.",
+  chPms: "Goal-setting completion % per portfolio against the 95% target line. PMS pending % = 100 − goal-setting %.",
+  chEngagement: "Employee listening score by department against the company benchmark (6.19). Bars below benchmark are red.",
+  chTrainDays: "Training days delivered per portfolio, parsed from the Training & Development section (e.g. \"251.62 days\").",
+  chInitMonth: "Number of HR-initiative events scheduled per month (Jan–Dec) for the selection.",
+  chInitCat: "HR initiatives by category (Engagement, Capability, Compliance, PMS, Communication, Culture), classified from each event's text.",
+};
+function infoIcon(text, flip) {
+  var s = el("span", { class: "info-i" + (flip ? " flip" : ""), tabindex: "0", role: "img" });
+  s.setAttribute("data-tip", text);
+  s.setAttribute("aria-label", "Explanation: " + text);
+  s.textContent = "i";
+  return s;
+}
+function decorateInfo() {
+  Object.keys(CHART_INFO).forEach(function (id) {
+    var cv = document.getElementById(id);
+    if (!cv) return;
+    var card = cv.closest(".chart-card");
+    var h = card && card.querySelector("h3");
+    if (!h || h.querySelector(".info-i")) return;
+    h.appendChild(infoIcon(CHART_INFO[id]));
+  });
+  $all("[data-info]").forEach(function (node) {
+    if (node.querySelector(".info-i")) return;
+    node.appendChild(infoIcon(node.getAttribute("data-info"), node.classList.contains("info-right")));
+  });
+}
 
 // Render only the CURRENTLY ACTIVE view (charts size correctly when visible).
 function renderActive() {
@@ -446,7 +494,10 @@ function renderHealthBand() {
   band.innerHTML = "";
   DATA.portfolios.forEach(function (p) {
     var rag = ragRisk(p.riskBand);
-    var tile = el("div", { class: "health-tile" + (ST.hrbp === p.key ? " active" : ""), tabindex: "0", role: "button" });
+    var tip = p.display + " — Risk " + (p.riskBand || "—") + " (index " + (p.riskIndex || 0) + "/100). " +
+      "Vacancy " + pct(p.vacancyPct) + " · Attrition " + pct(p.attrition) + " · " +
+      ((p.aging || {}).b90 || 0) + " roles open 90+ days. Click to focus this portfolio.";
+    var tile = el("div", { class: "health-tile" + (ST.hrbp === p.key ? " active" : ""), tabindex: "0", role: "button", title: tip });
     tile.innerHTML =
       '<div class="ht-top"><span class="ht-name">' + esc(p.display) + '</span>' + dot(rag) + '</div>' +
       '<div class="ht-band ' + rag + '">' + esc(p.riskBand || "—") + ' risk</div>' +
@@ -609,10 +660,10 @@ function renderHeadcount() {
     .filter(function (x) { return byLoc[x.l].total >= 3; }).sort(function (a, b) { return b.vacPct - a.vacPct; });
   var bestFn = gapArr.slice().sort(function (a, b) { return a.vacPct - b.vacPct; })[0];
   var ic = $("#hcInsights"); ic.innerHTML = "";
-  insightCard(ic, "Largest gap", gapArr[0] ? gapArr[0].fn : "—", gapArr[0] ? gapArr[0].vac + " vacant (" + Math.round(gapArr[0].vacPct) + "%)" : "", "red");
-  insightCard(ic, "Best-staffed function", bestFn ? bestFn.fn : "—", bestFn ? Math.round(bestFn.vacPct) + "% vacant" : "", "green");
-  insightCard(ic, "Highest location risk", locArr[0] ? locArr[0].l : "—", locArr[0] ? Math.round(locArr[0].vacPct) + "% vacant" : "", "orange");
-  insightCard(ic, "Records in view", fmt(recs.length), recs.filter(function (r) { return r.occupancy === "Vacant"; }).length + " vacant", "blue");
+  insightCard(ic, "Largest gap", gapArr[0] ? gapArr[0].fn : "—", gapArr[0] ? gapArr[0].vac + " vacant (" + Math.round(gapArr[0].vacPct) + "%)" : "", "red", "The function with the most vacant budgeted positions in the current selection.");
+  insightCard(ic, "Best-staffed function", bestFn ? bestFn.fn : "—", bestFn ? Math.round(bestFn.vacPct) + "% vacant" : "", "green", "The function with the lowest vacancy % (vacant ÷ total positions).");
+  insightCard(ic, "Highest location risk", locArr[0] ? locArr[0].l : "—", locArr[0] ? Math.round(locArr[0].vacPct) + "% vacant" : "", "orange", "Location with the highest vacancy % (min 3 positions to qualify).");
+  insightCard(ic, "Records in view", fmt(recs.length), recs.filter(function (r) { return r.occupancy === "Vacant"; }).length + " vacant", "blue", "Number of budget position records matching the current HRBP and filters.");
 
   // budget vs actual by function (top 12 by gap)
   var top = gapArr.slice(0, 12);
@@ -651,11 +702,13 @@ function renderHeadcount() {
   renderHcHeat(recs);
   renderHcTable(gapArr, byFn);
 }
-function insightCard(parent, label, val, sub, rag) {
-  parent.appendChild(el("div", { class: "card" },
-    '<div class="k-label" style="font-size:10px;color:#5a6577">' + esc(label) + '</div>' +
+function insightCard(parent, label, val, sub, rag, info) {
+  var card = el("div", { class: "card" },
+    '<div class="k-label" style="font-size:10px;color:#5a6577;display:inline-flex">' + esc(label) + '</div>' +
     '<div style="font-size:17px;font-weight:800;margin:4px 0">' + dot(rag) + " " + esc(val) + '</div>' +
-    '<div class="muted" style="font-size:11px">' + esc(sub) + '</div>'));
+    '<div class="muted" style="font-size:11px">' + esc(sub) + '</div>');
+  if (info) card.querySelector(".k-label").appendChild(infoIcon(info));
+  parent.appendChild(card);
 }
 function groupSum(recs, key) {
   var g = {};
@@ -728,10 +781,10 @@ function renderFunnel() {
   // metrics
   var fm = $("#funnelMetrics"); fm.innerHTML = "";
   var w2o = stages.wip ? Math.round(stages.offered / (stages.wip + stages.toBeOffered + stages.offered) * 100) : 0;
-  insightCard(fm, "In pipeline", fmt(stages.wip + stages.toBeOffered + stages.offered), "WIP+ToBe+Offered", "blue");
-  insightCard(fm, "Joined YTD", fmt(stages.joined), stages.offered + " currently offered", "green");
-  insightCard(fm, "On hold / declined", fmt(hold) + " / " + fmt(offerDeclined), "Side states", "grey");
-  insightCard(fm, "Offered → Joined", offerToJoinLabel(stages.joined, stages.offered), "YTD joins vs current offers", "amber");
+  insightCard(fm, "In pipeline", fmt(stages.wip + stages.toBeOffered + stages.offered), "WIP+ToBe+Offered", "blue", "Open Pipeline = WIP + To-Be-Offered + Offered (Monthly Review Recruitment Overview).");
+  insightCard(fm, "Joined YTD", fmt(stages.joined), stages.offered + " currently offered", "green", "Candidates joined in 2026 to date, vs the count currently at Offered stage.");
+  insightCard(fm, "On hold / declined", fmt(hold) + " / " + fmt(offerDeclined), "Side states", "grey", "Roles on hold (no business response) and offers declined — pipeline side states.");
+  insightCard(fm, "Offered → Joined", offerToJoinLabel(stages.joined, stages.offered), "YTD joins vs current offers", "amber", "Joined ÷ Offered. Joined is YTD cumulative while Offered is a current snapshot, so this can exceed 100%.");
 
   // funnel (horizontal bar descending)
   var fl = ["WIP", "To Be Offered", "Offered", "Joined"];
@@ -1025,10 +1078,10 @@ function renderInitiatives() {
 function renderDataQuality() {
   var dq = DATA.dataQuality;
   var m = $("#dqMetrics"); m.innerHTML = "";
-  insightCard(m, "Completeness", dq.completeness + "%", "tracker numeric/criticality", dq.completeness > 70 ? "green" : dq.completeness > 40 ? "amber" : "red");
-  insightCard(m, "Tracker rows", fmt(dq.trackerRows), "record-level (degraded)", "grey");
-  insightCard(m, "Budget rows", fmt(dq.budgetRows), "record-level (usable)", "blue");
-  insightCard(m, "Action-required issues", fmt(dq.actionRequired), "high severity", dq.actionRequired ? "red" : "green");
+  insightCard(m, "Completeness", dq.completeness + "%", "tracker numeric/criticality", dq.completeness > 70 ? "green" : dq.completeness > 40 ? "amber" : "red", "Share of usable tracker fields present (penalised for missing ageing and criticality).");
+  insightCard(m, "Tracker rows", fmt(dq.trackerRows), "record-level (degraded)", "grey", "Recruitment Tracker data rows. Categorical fields here are degraded by anonymisation.");
+  insightCard(m, "Budget rows", fmt(dq.budgetRows), "record-level (usable)", "blue", "Budget workbook position-level records (usable for headcount/vacancy).");
+  insightCard(m, "Action-required issues", fmt(dq.actionRequired), "high severity", dq.actionRequired ? "red" : "green", "Count of high-severity data-quality issues that warrant attention before acting.");
   var rows = (dq.issues || []).map(function (i) {
     return [i.type, fmt(i.count), pill(i.severity === "high" ? "red" : i.severity === "medium" ? "amber" : "grey", i.severity), i.detail];
   });

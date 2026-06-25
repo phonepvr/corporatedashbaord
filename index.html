@@ -106,7 +106,7 @@
     <!-- ================= D. EXECUTIVE KPI STRIP ================= -->
     <section class="section view-panel" id="sec-exec">
       <div class="section-head">
-        <h2>Executive Summary</h2>
+        <h2 data-info="Top-line KPIs for the current selection, a per-portfolio health band (risk band + vacancy / attrition / 90+ ageing), and an auto-generated story with key risks and recommended actions.">Executive Summary</h2>
         <span class="q">Where do we stand, what's at risk, what needs action?</span>
         <span class="src" id="execScope">All HRBPs</span>
       </div>
@@ -129,7 +129,7 @@
 
     <!-- ================= F. ALL-HRBP COMPARISON ================= -->
     <section class="section" id="sec-compare">
-      <div class="section-head"><h2>HRBP Comparison</h2>
+      <div class="section-head"><h2 data-info="Budget vs active, vacancy %, joinings vs exits, attrition, and the Portfolio Risk Index compared across all portfolios.">HRBP Comparison</h2>
         <span class="q">How does workload &amp; risk vary across portfolios?</span>
         <span class="src">Source: Monthly HRBP Review</span></div>
       <div class="grid g2">
@@ -148,7 +148,7 @@
 
     <!-- ================= G. HEADCOUNT & BUDGET ================= -->
     <section class="section" id="sec-headcount">
-      <div class="section-head"><h2>Headcount &amp; Budget</h2>
+      <div class="section-head"><h2 data-info="Record-level budget data: vacant vs occupied positions by function, location, grade and employee type. Vacancy = Budget − Active.">Headcount &amp; Budget</h2>
         <span class="q">Where are we under/over-staffed vs the 2026 budget?</span>
         <span class="src">Source: Budget workbook (record-level)</span></div>
       <div class="grid g4" id="hcInsights" style="margin-bottom:16px"></div>
@@ -161,19 +161,19 @@
         <div class="card chart-card"><h3>Grade pyramid</h3><div class="ctitle">Positions by grade band</div><div class="chart-box"><canvas id="chGrade"></canvas></div></div>
       </div>
       <div class="card" style="margin-top:16px">
-        <h3 style="font-size:13px;margin-bottom:4px">Vacancy concentration — Function × Location</h3>
+        <h3 style="font-size:13px;margin-bottom:4px" data-info="Each cell = vacancy % for that Function × Location (vacant ÷ total budgeted positions). Darker = higher vacancy. Click a cell to filter.">Vacancy concentration — Function × Location</h3>
         <div class="ctitle">Cell = vacancy %. Click a cell to drill in.</div>
         <div class="tbl-wrap" id="hcHeat" style="max-height:360px"></div>
       </div>
       <div class="card analyst-only" style="margin-top:16px">
-        <h3 style="font-size:13px;margin-bottom:8px">Function-wise budget table</h3>
+        <h3 style="font-size:13px;margin-bottom:8px" data-info="Budgeted, active, vacant and vacancy % for each function in the current selection.">Function-wise budget table</h3>
         <div id="hcTable"></div>
       </div>
     </section>
 
     <!-- ================= H. RECRUITMENT FUNNEL ================= -->
     <section class="section" id="sec-funnel">
-      <div class="section-head"><h2>Recruitment Funnel</h2>
+      <div class="section-head"><h2 data-info="Pipeline movement from the Monthly Review — WIP → To-Be-Offered → Offered → Joined — plus sourcing-channel and position-type mix.">Recruitment Funnel</h2>
         <span class="q">What's moving, what's stuck, where to intervene?</span>
         <span class="src">Source: Monthly Review · Recruitment Overview</span></div>
       <div class="grid g4" id="funnelMetrics" style="margin-bottom:16px"></div>
@@ -189,7 +189,7 @@
 
     <!-- ================= I. AGEING & TAT ================= -->
     <section class="section" id="sec-ageing">
-      <div class="section-head"><h2>Ageing &amp; TAT Risk</h2>
+      <div class="section-head"><h2 data-info="How long open roles have been ageing — bucketed from the review and as a numeric distribution from the tracker — against an assumed 45-day TAT.">Ageing &amp; TAT Risk</h2>
         <span class="q">Which roles age beyond limits?</span>
         <span class="src">Buckets: Monthly Review · Scatter: tracker (numeric)</span></div>
       <div class="grid g2">
@@ -197,14 +197,14 @@
         <div class="card chart-card"><h3>Numeric ageing distribution</h3><div class="ctitle">Tracker ageing days vs TAT threshold</div><div class="chart-box tall"><canvas id="chAgeHist"></canvas></div></div>
       </div>
       <div class="card analyst-only" style="margin-top:16px">
-        <h3 style="font-size:13px;margin-bottom:8px">Top ageing roles <span class="badge degraded">Tracker categoricals degraded</span></h3>
+        <h3 style="font-size:13px;margin-bottom:8px" data-info="Open roles ranked by ageing days (masked IDs). TAT breach = ageing beyond the assumed 45-day target. Tracker categoricals are degraded by anonymisation.">Top ageing roles <span class="badge degraded">Tracker categoricals degraded</span></h3>
         <div id="ageTable"></div>
       </div>
     </section>
 
     <!-- ================= J. CRITICAL CASES ================= -->
     <section class="section" id="sec-critical">
-      <div class="section-head"><h2>Critical Cases</h2>
+      <div class="section-head"><h2 data-info="The top-3 critical roles flagged per portfolio in the Monthly Review.">Critical Cases</h2>
         <span class="q">Which high-criticality roles need escalation?</span>
         <span class="src">Source: Monthly Review · Critical cases (top 3)</span></div>
       <div class="crit-grid" id="critGrid"></div>
@@ -212,7 +212,7 @@
 
     <!-- ================= K. ATTRITION & MOVEMENT ================= -->
     <section class="section" id="sec-attrition">
-      <div class="section-head"><h2>Attrition &amp; Movement</h2>
+      <div class="section-head"><h2 data-info="Joinings vs exits (June and YTD), the net-movement waterfall (Opening + Joinings − Exits = Closing), and the qualitative attrition insight text.">Attrition &amp; Movement</h2>
         <span class="q">Is the portfolio losing people faster than building capacity?</span>
         <span class="src">Source: Monthly Review</span></div>
       <div class="grid g2">
@@ -220,48 +220,48 @@
         <div class="card chart-card"><h3>Workforce movement</h3><div class="ctitle">Active → +Joinings − Exits → Closing (YTD)</div><div class="chart-box"><canvas id="chWaterfall"></canvas></div></div>
       </div>
       <div class="card" style="margin-top:16px">
-        <h3 style="font-size:13px;margin-bottom:4px">Insights on attrition <span class="badge illustrative">Granular exit data not in source</span></h3>
+        <h3 style="font-size:13px;margin-bottom:4px" data-info="Qualitative exit themes per portfolio from the Monthly Review. Granular exit-reason / regrettable-exit data is not present in the source.">Insights on attrition <span class="badge illustrative">Granular exit data not in source</span></h3>
         <div id="attritionInsight" class="note"></div>
       </div>
     </section>
 
     <!-- ================= L. PMS ================= -->
     <section class="section" id="sec-pms">
-      <div class="section-head"><h2>PMS Readiness</h2>
+      <div class="section-head"><h2 data-info="Goal-setting completion vs the 95% target, plus mid-year and end-year review status per portfolio. Pending % = 100 − goal-setting %.">PMS Readiness</h2>
         <span class="q">Are we ready for the performance cycle?</span>
         <span class="src">Source: Monthly Review · PMS</span></div>
       <div class="grid g2">
         <div class="card chart-card"><h3>Goal-setting completion by portfolio</h3><div class="ctitle">95% target reference line</div><div class="chart-box"><canvas id="chPms"></canvas></div></div>
-        <div class="card"><h3 style="font-size:13px;margin-bottom:8px">PMS readiness matrix</h3><div id="pmsMatrix"></div></div>
+        <div class="card"><h3 style="font-size:13px;margin-bottom:8px" data-info="Goal-setting %, pending %, and mid/end-year review status per portfolio. Pending % = 100 − goal-setting %.">PMS readiness matrix</h3><div id="pmsMatrix"></div></div>
       </div>
     </section>
 
     <!-- ================= M. ENGAGEMENT / SPEAKUP ================= -->
     <section class="section" id="sec-engagement">
-      <div class="section-head"><h2>Engagement &amp; Speak-Up</h2>
+      <div class="section-head"><h2 data-info="Employee listening scores vs the 6.19 company benchmark, and Speak-Up milestone completion per portfolio.">Engagement &amp; Speak-Up</h2>
         <span class="q">Where do we need engagement follow-through?</span>
         <span class="src">Source: Monthly Review · Listening &amp; Speak-Up</span></div>
       <div class="grid g2">
         <div class="card chart-card"><h3>Employee listening scores by department</h3><div class="ctitle">Company benchmark 6.19 reference line</div><div class="chart-box tall"><canvas id="chEngagement"></canvas></div></div>
-        <div class="card"><h3 style="font-size:13px;margin-bottom:8px">Speak-Up milestone timeline</h3><div class="timeline" id="speakupTimeline"></div>
+        <div class="card"><h3 style="font-size:13px;margin-bottom:8px" data-info="Speak-Up programme milestones and how many portfolios have completed each. ✓ = completed, • = pending.">Speak-Up milestone timeline</h3><div class="timeline" id="speakupTimeline"></div>
           <div id="speakupGrid" style="margin-top:14px"></div></div>
       </div>
     </section>
 
     <!-- ================= N. TRAINING ================= -->
     <section class="section" id="sec-training">
-      <div class="section-head"><h2>Training &amp; Capability</h2>
+      <div class="section-head"><h2 data-info="Training days delivered and upcoming training per portfolio, parsed from the Training & Development section.">Training &amp; Capability</h2>
         <span class="q">Is the portfolio building capability in line with need?</span>
         <span class="src">Source: Monthly Review · Training &amp; Development</span></div>
       <div class="grid g2">
         <div class="card chart-card"><h3>Training days by portfolio</h3><div class="ctitle">Extracted from "x days" strings</div><div class="chart-box"><canvas id="chTrainDays"></canvas></div></div>
-        <div class="card"><h3 style="font-size:13px;margin-bottom:8px">Upcoming training</h3><div id="trainUpcoming"></div></div>
+        <div class="card"><h3 style="font-size:13px;margin-bottom:8px" data-info="Headcount, training days delivered, and the next planned training per portfolio.">Upcoming training</h3><div id="trainUpcoming"></div></div>
       </div>
     </section>
 
     <!-- ================= O. HR INITIATIVES ================= -->
     <section class="section" id="sec-initiatives">
-      <div class="section-head"><h2>HR Initiatives Calendar</h2>
+      <div class="section-head"><h2 data-info="HR touchpoints planned through the year — event load by month, category mix, and a portfolio × month coverage heatmap.">HR Initiatives Calendar</h2>
         <span class="q">What HR touchpoints are planned; is coverage balanced?</span>
         <span class="src">Source: Monthly Review · Initiatives Calendar</span></div>
       <div class="grid g2">
@@ -269,7 +269,7 @@
         <div class="card chart-card"><h3>Event mix by category</h3><div class="ctitle">Classified from event text</div><div class="chart-box"><canvas id="chInitCat"></canvas></div></div>
       </div>
       <div class="card" style="margin-top:16px">
-        <h3 style="font-size:13px;margin-bottom:4px">Coverage heatmap — Portfolio × Month</h3>
+        <h3 style="font-size:13px;margin-bottom:4px" data-info="Each cell = number of HR-initiative events for that portfolio in that month. Click a cell to list the events.">Coverage heatmap — Portfolio × Month</h3>
         <div class="ctitle">Cell = event count. Click to list events.</div>
         <div class="tbl-wrap" id="initHeat" style="max-height:300px"></div>
       </div>
@@ -277,7 +277,7 @@
 
     <!-- ================= P. DATA QUALITY ================= -->
     <section class="section" id="sec-dq">
-      <div class="section-head"><h2>Data Quality &amp; Governance</h2>
+      <div class="section-head"><h2 data-info="Completeness and data issues computed at load time, including which Recruitment Tracker fields are degraded by source anonymisation.">Data Quality &amp; Governance</h2>
         <span class="q">Can we trust the data enough to act?</span>
         <span class="src">Computed at bake time</span></div>
       <div class="grid g4" id="dqMetrics" style="margin-bottom:16px"></div>
@@ -291,7 +291,7 @@
 
     <!-- ================= Q. ACTION DASHBOARD ================= -->
     <section class="section" id="sec-actions">
-      <div class="section-head"><h2>This Month's Priorities</h2>
+      <div class="section-head"><h2 data-info="Actions auto-derived from threshold breaches: vacancy &gt;20%, 90+ day ageing, attrition &gt;5%, PMS &lt;85%, and flagged critical cases. Status is editable and exportable.">This Month's Priorities</h2>
         <span class="q">What are the top actions, and who owns them?</span>
         <span class="src">Derived from all signals</span></div>
       <div class="tbl-tools">
@@ -307,7 +307,7 @@
 
     <!-- ================= X. COMPARE TWO HRBPs ================= -->
     <section class="section" id="sec-compare2">
-      <div class="section-head"><h2>Compare Two Portfolios</h2>
+      <div class="section-head"><h2 data-info="Pick any two portfolios to compare budget, vacancy, pipeline, ageing, attrition, PMS, training days and risk index side by side.">Compare Two Portfolios</h2>
         <span class="q">How do two portfolios stack up side by side?</span>
         <span class="src">Portfolio comparison — not individual performance comparison</span></div>
       <div class="card">

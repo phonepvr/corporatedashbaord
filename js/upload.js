@@ -445,6 +445,9 @@ function parseAll() {
       window.__setDashboardData(data);
       document.getElementById("loadChip").className = "status-chip upload";
       document.getElementById("loadChip").textContent = "Uploaded data loaded";
+      // Auto-collapse the data-load panel so navigation stays clean after loading.
+      var dl = document.getElementById("dataLoad");
+      if (dl) { dl.classList.remove("open"); var ch = dl.querySelector(".c-head"); if (ch) ch.setAttribute("aria-expanded", "false"); }
       status("Parsed ✓ — " + portfolios.length + " portfolios, " + budget.records.length + " budget rows, " +
         tracker.records.length + " tracker rows." + (missing.length ? " <b>Note:</b> " + missing.join(", ") + "." : "") +
         (leaks.length ? " <span style='color:#cc3340'>⚠ Masking guard flagged " + leaks.length + " values.</span>" : " Masking guard passed."), leaks.length === 0);
