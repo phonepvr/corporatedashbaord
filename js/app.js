@@ -96,16 +96,24 @@ function aggregate() {
   a.pmsPending = a.activeForAttr ? Math.round(a.pmsPendingW / a.activeForAttr * 10) / 10 : null;
   a.vacancyPct = a.budget ? Math.round(a.vacancy / a.budget * 1000) / 10 : null;
 
-  // ----- Scenario Lens (simulated) -----
+  // live tracker counts for the selection (drive the scenario lens & open-roles insight)
+  var trk = (DATA.recruitmentRecords || []).filter(function (r) {
+    return r.portfolio && (ST.hrbp === "all" || r.portfolio === ST.hrbp);
+  });
+  a.trkOpen = trk.filter(function (r) { return ["Joined", "Confirmation", "Internal Movement"].indexOf(r.status) < 0; }).length;
+  a.trkOffered = trk.filter(function (r) { return r.status === "Offered"; }).length;
+  a.trkConfirm = trk.filter(function (r) { return r.status === "Confirmation"; }).length;
+  a.trkHold = trk.filter(function (r) { return r.status === "Hold"; }).length;
+  a.trkB90 = trk.filter(function (r) { return r.ageingBucket === "90-120" || r.ageingBucket === "120+"; }).length;
+  a.trkTatBreach = trk.filter(function (r) { return r.tatBreach; }).length;
+
+  // ----- Scenario Lens (simulated) — driven by the live tracker -----
   var s = ST.scenario, simNote = null;
-  var activeSim = a.active, vacSim = a.vacancy, pipeSim = a.openPipeline;
-  if (s === "offered") { activeSim += a.offered; pipeSim -= a.offered; simNote = "If offered roles join"; }
-  else if (s === "ojt") {
-    var ojt = ps.reduce(function (n, p) { return n + ojtVacantCount(p); }, 0);
-    activeSim += ojt; simNote = "If OJT confirmed (+" + ojt + ")";
-  }
-  else if (s === "hold") { pipeSim += a.onHold; activeSim += 0; simNote = "If hold roles released into pipeline (+" + a.onHold + ")"; }
-  else if (s === "age90") { pipeSim -= a.b90; activeSim += a.b90; simNote = "If 90+ day roles closed (+" + a.b90 + ")"; }
+  var activeSim = a.active, vacSim = a.vacancy, pipeSim = a.openPipeline || a.trkOpen;
+  if (s === "offered") { activeSim += a.trkOffered; pipeSim -= a.trkOffered; simNote = "If offered roles join (+" + a.trkOffered + ")"; }
+  else if (s === "ojt") { activeSim += a.trkConfirm; pipeSim -= a.trkConfirm; simNote = "If OJT/GET confirmations complete (+" + a.trkConfirm + ")"; }
+  else if (s === "hold") { pipeSim += a.trkHold; simNote = "If hold roles released into pipeline (+" + a.trkHold + ")"; }
+  else if (s === "age90") { pipeSim -= a.trkB90; activeSim += a.trkB90; simNote = "If 90+ day roles closed (+" + a.trkB90 + ")"; }
   a.activeSim = activeSim;
   a.vacSim = a.budget - activeSim;
   a.vacPctSim = a.budget ? Math.round((a.budget - activeSim) / a.budget * 1000) / 10 : null;
@@ -127,7 +135,6 @@ function filteredBudget() {
     if (ST.filters.function && r.function !== ST.filters.function) return false;
     if (ST.filters.location && r.plant !== ST.filters.location) return false;
     if (ST.filters.grade && gradeBand(r.grade) !== ST.filters.grade) return false;
-    if (ST.filters.empType && r.employeeType !== ST.filters.empType) return false;
     if (ST.filters.occupancy && r.occupancy !== ST.filters.occupancy) return false;
     return true;
   });
@@ -137,6 +144,23 @@ function gradeBand(g) {
   var m = String(g).match(/([A-Za-z]+)[ -]?(\d+)/);
   if (m) return m[1].toUpperCase().slice(0, 1) + "-band";
   return g;
+}
+
+// ---------- filtered recruitment-tracker records (recruitment / ageing / analyst) ----------
+function trackerInScope() {
+  var f = ST.filters;
+  return (DATA.recruitmentRecords || []).filter(function (r) {
+    if (ST.hrbp !== "all" && r.portfolio !== ST.hrbp) return false;
+    if (f.function && r.function !== f.function) return false;
+    if (f.location && r.location !== f.location) return false;
+    if (f.grade && gradeBand(r.grade) !== f.grade) return false;
+    if (f.status && r.status !== f.status) return false;
+    if (f.sourcing && r.sourcing !== f.sourcing) return false;
+    if (f.criticality && r.criticality !== f.criticality) return false;
+    if (f.recType && r.positionType !== f.recType) return false;
+    if (f.year && r.budgetedYear !== f.year) return false;
+    return true;
+  });
 }
 
 /* =========================================================================
@@ -203,12 +227,12 @@ var CHART_INFO = {
   chOccVac: "Share of budgeted positions in the current selection that are Occupied vs Vacant.",
   chEmpType: "Count of budgeted positions by employee type (Regular / Trainee / OJT / Contractual).",
   chGrade: "Count of budgeted positions by grade band (grouped on the grade-code prefix).",
-  chFunnel: "Recruitment pipeline counts from the Monthly Review: WIP → To-Be-Offered → Offered → Joined. The % in the tooltip is share of WIP.",
-  chSourcing: "Sourcing-channel mix across the pipeline: RPO, Consultant, and Other (ER / TA / Internal Movement).",
-  chStageByHrbp: "Pipeline composition (WIP / To-Be-Offered / Offered / Joined) stacked per portfolio.",
-  chPosType: "New vs Replacement positions and criticality 1/2/3, from the Recruitment Tracker. Some categorical fields here are degraded by source anonymisation and are flagged as such.",
-  chAgeBuckets: "Open roles (WIP) split into ageing buckets per portfolio — 0–30 / 30–60 / 60–90 / 90+ days (Monthly Review Aging Overview).",
-  chAgeHist: "Distribution of open-role ageing in days (numeric Ageing field from the Recruitment Tracker). TAT breach is assumed beyond 45 days.",
+  chFunnel: "Live recruitment pipeline by Current Status (Recruitment Tracker): Yet to Start → WIP → To-Be-Offered → Offered → Joined, for the current selection. % is share of all tracked roles.",
+  chSourcing: "Mix of sourcing channels across the pipeline (RPO, OJT/GET Confirmation, Consultant, ER, Internal, …) — the top channels by volume.",
+  chStageByHrbp: "Recruitment status composition (Yet to Start / WIP / To-Be-Offered / Offered / Joined / Confirmation / Hold) stacked per portfolio.",
+  chPosType: "The functions with the most open roles in the pipeline (top 8), from the live tracker — where hiring demand is concentrated.",
+  chAgeBuckets: "Open roles split into ageing buckets per portfolio (0–30 / 30–60 / 60–90 / 90–120 / 120+ days) using the tracker's own ageing bucket.",
+  chAgeHist: "Distribution of numeric open-role ageing (days) from the tracker, for the current selection. TAT breach is computed per row against each role's Agreed TAT.",
   chMovement: "Joinings vs Exits (June and YTD) with a net-movement line. Net = Joinings − Exits.",
   chWaterfall: "Workforce movement YTD: Opening active + Joinings − Exits = Closing active.",
   chPms: "Goal-setting completion % per portfolio against the 95% target line. PMS pending % = 100 − goal-setting %.",
@@ -356,12 +380,17 @@ function buildQuickViews() {
 }
 
 /* ---------- C. filter bar ---------- */
+// src: 'tracker' | 'budget'.  field: column on that record set (or 'grade' band).
 var FILTER_DEFS = [
-  { key: "function", label: "Function", from: "function" },
-  { key: "location", label: "Location", from: "plant" },
-  { key: "grade", label: "Grade", from: "_grade" },
-  { key: "empType", label: "Position type", from: "employeeType" },
-  { key: "occupancy", label: "Occupancy", from: "occupancy" },
+  { key: "function", label: "Function", src: "tracker", field: "function" },
+  { key: "location", label: "Location", src: "tracker", field: "location" },
+  { key: "status", label: "Status", src: "tracker", field: "status" },
+  { key: "sourcing", label: "Sourcing", src: "tracker", field: "sourcing" },
+  { key: "criticality", label: "Criticality", src: "tracker", field: "criticality" },
+  { key: "recType", label: "Recruitment type", src: "tracker", field: "positionType" },
+  { key: "year", label: "Budgeted year", src: "tracker", field: "budgetedYear" },
+  { key: "grade", label: "Grade band", src: "tracker", field: "grade", band: true },
+  { key: "occupancy", label: "Occupancy", src: "budget", field: "occupancy" },
 ];
 function buildFilterBar() {
   var bar = $("#filterBar");
@@ -372,32 +401,22 @@ function buildFilterBar() {
     var sel = el("select", { id: "flt-" + f.key });
     sel.onchange = function () {
       if (sel.value) ST.filters[f.key] = sel.value; else delete ST.filters[f.key];
-      App.fullRender();
+      App.fullRender(); refreshFilterOptions();
     };
-    wrap.appendChild(sel);
-    bar.appendChild(wrap);
-  });
-  // degraded-field disabled filters (honesty)
-  ["Current Status", "Sourcing Channel", "Sub-function"].forEach(function (lbl) {
-    var wrap = el("div", { class: "f" });
-    wrap.appendChild(el("label", {}, lbl));
-    var sel = el("select", { disabled: "true", title: "Degraded by source anonymisation — disabled" });
-    sel.appendChild(el("option", {}, "Degraded — n/a"));
     wrap.appendChild(sel);
     bar.appendChild(wrap);
   });
   refreshFilterOptions();
 }
 function refreshFilterOptions() {
-  var recs = (DATA.budgetRecords || []).filter(function (r) {
-    return ST.hrbp === "all" || r.portfolio === ST.hrbp;
-  });
+  var trk = (DATA.recruitmentRecords || []).filter(function (r) { return ST.hrbp === "all" || r.portfolio === ST.hrbp; });
+  var bud = (DATA.budgetRecords || []).filter(function (r) { return ST.hrbp === "all" || r.portfolio === ST.hrbp; });
   FILTER_DEFS.forEach(function (f) {
     var sel = $("#flt-" + f.key);
     if (!sel) return;
-    var vals;
-    if (f.key === "grade") vals = uniq(recs.map(function (r) { return gradeBand(r.grade); }));
-    else vals = uniq(recs.map(function (r) { return r[f.from]; }));
+    var recs = f.src === "budget" ? bud : trk;
+    var vals = f.band ? uniq(recs.map(function (r) { return gradeBand(r[f.field]); }))
+                      : uniq(recs.map(function (r) { return r[f.field]; }));
     vals = vals.filter(function (v) { return v && v !== NA; }).sort();
     var cur = ST.filters[f.key] || "";
     sel.innerHTML = "";
@@ -426,7 +445,7 @@ function renderFilterChips() {
     clr.onclick = resetAll;
     c.appendChild(clr);
     c.appendChild(el("span", { class: "muted", style: "font-size:11px" },
-      filteredBudget().length + " budget records match"));
+      trackerInScope().length + " recruitment · " + filteredBudget().length + " budget records match"));
   }
 }
 function fLabel(k) { for (var i = 0; i < FILTER_DEFS.length; i++) if (FILTER_DEFS[i].key === k) return FILTER_DEFS[i].label; return k; }
@@ -492,15 +511,16 @@ function renderHealthBand() {
   band.innerHTML = "";
   DATA.portfolios.forEach(function (p) {
     var rag = ragRisk(p.riskBand);
+    var b90 = (p.tracker && p.tracker.ageing90plus) || 0;
     var tip = p.display + " — Risk " + (p.riskBand || "—") + " (index " + (p.riskIndex || 0) + "/100). " +
       "Vacancy " + pct(p.vacancyPct) + " · Attrition " + pct(p.attrition) + " · " +
-      ((p.aging || {}).b90 || 0) + " roles open 90+ days. Click to focus this portfolio.";
+      b90 + " open roles 90+ days. Click to focus this portfolio.";
     var tile = el("div", { class: "health-tile" + (ST.hrbp === p.key ? " active" : ""), tabindex: "0", role: "button", title: tip });
     tile.innerHTML =
       '<div class="ht-top"><span class="ht-name">' + esc(p.display) + '</span>' + dot(rag) + '</div>' +
       '<div class="ht-band ' + rag + '">' + esc(p.riskBand || "—") + ' risk</div>' +
       '<div class="ht-metrics"><span>Vac ' + pct(p.vacancyPct) + '</span><span>Attr ' + pct(p.attrition) + '</span>' +
-      '<span>90+ ' + fmt((p.aging || {}).b90 || 0) + '</span></div>';
+      '<span>90+ ' + fmt(b90) + '</span></div>';
     tile.onclick = function () { setHrbp(ST.hrbp === p.key ? "all" : p.key); };
     band.appendChild(tile);
   });
@@ -518,15 +538,16 @@ function renderStory() {
       DATA.portfolios.length + " portfolios, with " + fmt(a.active) + " active (" +
       pct(a.budget ? a.active / a.budget * 100 : null) + " filled). Vacancy stands at <b>" + fmt(a.vacancy) +
       "</b> (" + pct(a.vacancyPct) + "). YTD the group added " + a.joiningsYTD + " and lost " + a.exitsYTD +
-      " (net " + (a.joiningsYTD - a.exitsYTD) + "). Open pipeline is " + a.openPipeline +
-      " with " + a.b90 + " roles ageing beyond 90 days.";
+      " (net " + (a.joiningsYTD - a.exitsYTD) + "). The live tracker shows <b>" + a.trkOpen +
+      "</b> open roles — " + a.trkB90 + " ageing 90+ days and " + a.trkTatBreach + " past their agreed TAT.";
   } else {
-    var p = ps[0];
+    var p = ps[0], t = p.tracker || {};
     var lowEng = p.engagementLowestScore;
     lead = "<b>" + esc(p.display) + "</b> manages " + fmt(p.budget) + " budgeted positions, " +
       fmt(p.active) + " active — vacancy <b>" + fmt(p.vacancy) + "</b> (" + pct(p.vacancyPct) + ", " +
-      ragWord(ragVacancy(p.vacancyPct)) + "). Recruitment movement: " + p.openPipeline + " in pipeline, " +
-      p.joined + " joined YTD. Ageing risk: " + ((p.aging && p.aging.b90) || 0) + " roles 90+ days. Attrition <b>" +
+      ragWord(ragVacancy(p.vacancyPct)) + "). Live pipeline: " + (t.open || 0) + " open roles, " +
+      (t.ageing90plus || 0) + " ageing 90+ days, " + (t.tatBreach || 0) + " past agreed TAT" +
+      (t.highCrit ? ", " + t.highCrit + " high-criticality" : "") + ". Attrition <b>" +
       pct(p.attrition) + "</b> (" + ragWord(ragAttrition(p.attrition)) + "). PMS goal-setting at " +
       pct((p.pms || {}).goalSetting) + ". " +
       (lowEng != null ? "Engagement watch: " + esc(p.engagementLowest) + " at " + lowEng + " vs company " + DATA.meta.benchmark + ". " : "") +
@@ -555,14 +576,16 @@ function ragWord(r) { return { green: "healthy", amber: "watch", orange: "elevat
 function computeRisks(ps) {
   var out = [];
   ps.forEach(function (p) {
+    var t = p.tracker || {};
     if (p.vacancyPct != null && p.vacancyPct > 20) out.push({ rag: "red", txt: p.display + ": vacancy " + pct(p.vacancyPct) });
-    var b90 = (p.aging && p.aging.b90) || 0;
-    if (b90 >= 10) out.push({ rag: "red", txt: p.display + ": " + b90 + " roles 90+ days" });
+    if ((t.ageing90plus || 0) >= 10) out.push({ rag: "red", txt: p.display + ": " + t.ageing90plus + " open roles 90+ days" });
+    if (t.tatBreach) out.push({ rag: "orange", txt: p.display + ": " + t.tatBreach + " roles past agreed TAT" });
     if (p.attrition != null && p.attrition > 5) out.push({ rag: "red", txt: p.display + ": attrition " + pct(p.attrition) });
+    if (t.highCrit) out.push({ rag: "orange", txt: p.display + ": " + t.highCrit + " high-criticality roles open" });
     if ((p.pms || {}).goalSetting != null && p.pms.goalSetting < 85) out.push({ rag: "amber", txt: p.display + ": PMS goal-setting " + pct(p.pms.goalSetting) });
   });
   if (!out.length) out.push({ rag: "green", txt: "No threshold breaches in current selection." });
-  return out.slice(0, 7);
+  return out.slice(0, 8);
 }
 
 /* ---------- F. comparison charts ---------- */
@@ -761,110 +784,103 @@ function renderHcTable(gapArr, byFn) {
   makeTable("#hcTable", ["Function", "Budget", "Active", "Vacant", "Vacancy %"], rows, { id: "hc" });
 }
 
-/* ---------- H. recruitment funnel ---------- */
+/* ---------- H. recruitment funnel (from the live tracker, per HRBP) ---------- */
+var STATUS_COLORS = {
+  "Yet to Start": "#c2c2c6", "WIP": "#8a8a90", "To Be Offered": BRAND.yellow,
+  "Offered": RAG.red, "Joined": BRAND.ink, "Confirmation": RAG.green, "Hold": RAG.darkred,
+  "Internal Movement": "#7a86a0", "Unknown": "#dcdcdc",
+};
+function statusCount(recs, s) { return recs.filter(function (r) { return r.status === s; }).length; }
 function renderFunnel() {
-  var ps = activePortfolios();
-  var stages = { wip: 0, toBeOffered: 0, offered: 0, joined: 0 };
-  var sourcing = { rpo: 0, consultant: 0, other: 0 };
-  var offerDeclined = 0, hold = 0;
-  ps.forEach(function (p) {
-    ["wip", "toBeOffered", "offered", "joined", "offerDeclined"].forEach(function (k) {
-      var d = p.recruitment[k]; if (!d) return;
-      if (k === "offerDeclined") offerDeclined += d.total;
-      else stages[k] += d.total;
-      ["rpo", "consultant", "other"].forEach(function (s) { if (k !== "offerDeclined") sourcing[s] += d[s] || 0; });
-    });
-    hold += p.onHold || 0;
-  });
-  // metrics
-  var fm = $("#funnelMetrics"); fm.innerHTML = "";
-  var w2o = stages.wip ? Math.round(stages.offered / (stages.wip + stages.toBeOffered + stages.offered) * 100) : 0;
-  insightCard(fm, "In pipeline", fmt(stages.wip + stages.toBeOffered + stages.offered), "WIP+ToBe+Offered", "blue", "Open Pipeline = WIP + To-Be-Offered + Offered (Monthly Review Recruitment Overview).");
-  insightCard(fm, "Joined YTD", fmt(stages.joined), stages.offered + " currently offered", "green", "Candidates joined in 2026 to date, vs the count currently at Offered stage.");
-  insightCard(fm, "On hold / declined", fmt(hold) + " / " + fmt(offerDeclined), "Side states", "grey", "Roles on hold (no business response) and offers declined — pipeline side states.");
-  insightCard(fm, "Offered → Joined", offerToJoinLabel(stages.joined, stages.offered), "YTD joins vs current offers", "amber", "Joined ÷ Offered. Joined is YTD cumulative while Offered is a current snapshot, so this can exceed 100%.");
+  var recs = trackerInScope();
+  var open = recs.filter(function (r) { return ["Joined", "Confirmation", "Internal Movement"].indexOf(r.status) < 0; }).length;
+  var joined = statusCount(recs, "Joined"), hold = statusCount(recs, "Hold");
+  var tatBreach = recs.filter(function (r) { return r.tatBreach; }).length;
+  var highCrit = recs.filter(function (r) { return r.criticality === "High"; }).length;
 
-  // funnel (horizontal bar descending)
-  var fl = ["WIP", "To Be Offered", "Offered", "Joined"];
-  var fv = [stages.wip, stages.toBeOffered, stages.offered, stages.joined];
+  var fm = $("#funnelMetrics"); fm.innerHTML = "";
+  insightCard(fm, "Open roles", fmt(open), fmt(recs.length) + " in tracker", "blue",
+    "Roles in the live Recruitment Tracker not yet Joined / Confirmed / Internally-moved, for the current selection.");
+  insightCard(fm, "Joined", fmt(joined), statusCount(recs, "Offered") + " at Offered", "green",
+    "Roles with Current Status = Joined.");
+  insightCard(fm, "On hold", fmt(hold), statusCount(recs, "Yet to Start") + " yet to start", "grey",
+    "Roles with status Hold (awaiting business), and those not yet started.");
+  insightCard(fm, "TAT breach / High-crit", fmt(tatBreach) + " / " + fmt(highCrit), "vs agreed TAT", tatBreach || highCrit ? "red" : "green",
+    "Roles aged beyond their per-row Agreed TAT, and the count of High-criticality roles still open.");
+
+  // pipeline funnel by status
+  var fl = ["Yet to Start", "WIP", "To Be Offered", "Offered", "Joined"];
+  var fv = fl.map(function (s) { return statusCount(recs, s); });
   chart("chFunnel", {
     type: "bar",
-    data: { labels: fl, datasets: [{ label: "Count", data: fv,
-      backgroundColor: ["#bdbdc2", BRAND.yellow, RAG.red, BRAND.ink] }] },
+    data: { labels: fl, datasets: [{ label: "Roles", data: fv, backgroundColor: fl.map(function (s) { return STATUS_COLORS[s]; }) }] },
     options: baseOpts({ x: { beginAtZero: true } }, "y", function (ctx) {
-      var tot = fv[0] || 1; return ctx.raw + " roles · " + Math.round(ctx.raw / tot * 100) + "% of WIP"; }),
+      var tot = recs.length || 1; return ctx.raw + " roles · " + Math.round(ctx.raw / tot * 100) + "% of pipeline"; }),
   });
+  // sourcing channel mix (top)
+  var src = topN(countByField(recs, "sourcing"), 7);
   chart("chSourcing", {
     type: "doughnut",
-    data: { labels: ["RPO", "Consultant", "Other (ER/TA/Internal)"], datasets: [{
-      data: [sourcing.rpo, sourcing.consultant, sourcing.other], backgroundColor: [BRAND.ink, RAG.red, BRAND.yellow] }] },
-    options: { plugins: { legend: { position: "bottom" } } },
+    data: { labels: src.map(function (x) { return x[0]; }), datasets: [{ data: src.map(function (x) { return x[1]; }),
+      backgroundColor: BRAND.series.concat(["#c9c9cd", "#e0e0e3"]) }] },
+    options: { plugins: { legend: { position: "right", labels: { boxWidth: 10, font: { size: 10 } } } } },
   });
-  // stage by hrbp stacked
-  var sp = DATA.portfolios;
+  // status by portfolio (stacked)
+  var sp = DATA.portfolios, statuses = ["Yet to Start", "WIP", "To Be Offered", "Offered", "Joined", "Confirmation", "Hold"];
   chart("chStageByHrbp", {
     type: "bar",
-    data: { labels: sp.map(function (p) { return p.display; }), datasets: [
-      ds("WIP", sp, "wip", "#bdbdc2"), ds("To Be Offered", sp, "toBeOffered", BRAND.yellow),
-      ds("Offered", sp, "offered", RAG.red), ds("Joined", sp, "joined", BRAND.ink)] },
+    data: { labels: sp.map(function (p) { return p.display; }), datasets: statuses.map(function (s) {
+      return { label: s, backgroundColor: STATUS_COLORS[s],
+        data: sp.map(function (p) { return (DATA.recruitmentRecords || []).filter(function (r) { return r.portfolio === p.key && r.status === s; }).length; }) };
+    }) },
     options: baseOpts({ x: { stacked: true }, y: { stacked: true, beginAtZero: true } }),
   });
-  // position type & criticality from tracker
-  var recs = trackerInScope();
-  var byType = countByField(recs, "positionType");
-  var byCrit = countByField(recs, "criticality");
+  // open roles by function (top 8)
+  var fn = topN(countByField(recs, "function"), 8);
   chart("chPosType", {
     type: "bar",
-    data: { labels: ["New", "Replacement", "Crit 1", "Crit 2", "Crit 3"],
-      datasets: [{ label: "Roles", data: [byType.New || 0, byType.Replacement || 0, byCrit["1"] || 0, byCrit["2"] || 0, byCrit["3"] || 0],
-        backgroundColor: [RAG.green, RAG.blue, RAG.darkred, RAG.orange, RAG.amber] }] },
-    options: baseOpts({ y: { beginAtZero: true } }),
+    data: { labels: fn.map(function (x) { return x[0]; }), datasets: [{ label: "Roles", data: fn.map(function (x) { return x[1]; }), backgroundColor: BRAND.ink }] },
+    options: baseOpts({ x: { beginAtZero: true } }, "y", function (ctx) { return ctx.raw + " open roles"; }),
   });
-  function ds(label, arr, key, color) {
-    return { label: label, data: arr.map(function (p) { return p.recruitment[key] ? p.recruitment[key].total : 0; }), backgroundColor: color };
-  }
-}
-function offerToJoinLabel(joined, offered) {
-  if (!offered) return "—";
-  var r = Math.round(joined / offered * 100);
-  return r > 100 ? "high (YTD>offer)" : r + "%";
 }
 function countByField(recs, key) { var g = {}; recs.forEach(function (r) { var v = r[key]; if (v && v !== NA) g[v] = (g[v] || 0) + 1; }); return g; }
-function trackerInScope() { return DATA.recruitmentRecords || []; } // tracker has no usable HRBP key
+function topN(obj, n) { return Object.keys(obj).map(function (k) { return [k, obj[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, n); }
 
-/* ---------- I. ageing ---------- */
+/* ---------- I. ageing & TAT (from the live tracker) ---------- */
+var BUCKET_ORDER = ["0-30", "30-60", "60-90", "90-120", "120+"];
+var BUCKET_COLORS = { "0-30": RAG.green, "30-60": RAG.amber, "60-90": RAG.orange, "90-120": RAG.red, "120+": RAG.darkred };
 function renderAgeing() {
-  var ps = DATA.portfolios;
+  var sp = DATA.portfolios, all = DATA.recruitmentRecords || [];
+  // ageing-bucket distribution per portfolio (from the tracker's own bucket field)
   chart("chAgeBuckets", {
     type: "bar",
-    data: { labels: ps.map(function (p) { return p.display; }), datasets: [
-      bds("0-30", "b0_30", RAG.green), bds("30-60", "b30_60", RAG.amber),
-      bds("60-90", "b60_90", RAG.orange), bds("90 +", "b90", RAG.red)] },
+    data: { labels: sp.map(function (p) { return p.display; }), datasets: BUCKET_ORDER.map(function (bk) {
+      return { label: bk, backgroundColor: BUCKET_COLORS[bk],
+        data: sp.map(function (p) { return all.filter(function (r) { return r.portfolio === p.key && r.ageingBucket === bk; }).length; }) };
+    }) },
     options: baseOpts({ x: { stacked: true }, y: { stacked: true, beginAtZero: true } }),
   });
-  function bds(label, key, color) { return { label: label, data: ps.map(function (p) { return (p.aging && p.aging[key]) || 0; }), backgroundColor: color }; }
-
-  // numeric histogram from tracker
-  var ages = (DATA.recruitmentRecords || []).map(function (r) { return r.ageing; }).filter(function (a) { return a != null; });
-  var bins = [0, 30, 60, 90, 120, 9999], binLabels = ["0-30", "30-60", "60-90", "90-120", "120+"];
-  var counts = binLabels.map(function () { return 0; });
-  ages.forEach(function (a) { for (var i = 0; i < binLabels.length; i++) if (a <= bins[i + 1]) { counts[i]++; break; } });
-  var tat = DATA.meta.tatAssumptionDays;
+  // numeric ageing distribution (scoped)
+  var recs = trackerInScope();
+  var ages = recs.map(function (r) { return r.ageing; }).filter(function (a) { return a != null; });
+  var bins = [0, 30, 60, 90, 120, 1e9], counts = BUCKET_ORDER.map(function () { return 0; });
+  ages.forEach(function (a) { for (var i = 0; i < BUCKET_ORDER.length; i++) if (a <= bins[i + 1]) { counts[i]++; break; } });
   chart("chAgeHist", {
     type: "bar",
-    data: { labels: binLabels, datasets: [{ label: "Roles (n=" + ages.length + ")", data: counts,
-      backgroundColor: [RAG.green, RAG.amber, RAG.orange, RAG.red, RAG.darkred] }] },
+    data: { labels: BUCKET_ORDER, datasets: [{ label: "Roles (n=" + ages.length + ")", data: counts,
+      backgroundColor: BUCKET_ORDER.map(function (b) { return BUCKET_COLORS[b]; }) }] },
     options: baseOpts({ y: { beginAtZero: true } }, null, function (ctx) {
-      return ctx.raw + " roles · " + Math.round(ctx.raw / ages.length * 100) + "% (TAT assumed " + tat + "d)"; }),
+      return ctx.raw + " roles · " + (ages.length ? Math.round(ctx.raw / ages.length * 100) : 0) + "% (numeric ageing)"; }),
   });
-  // top ageing roles table
-  var top = (DATA.recruitmentRecords || []).filter(function (r) { return r.ageing != null; })
-    .sort(function (a, b) { return b.ageing - a.ageing; }).slice(0, 50)
+  // top ageing roles table (real, masked role ids)
+  var top = recs.filter(function (r) { return r.ageing != null; })
+    .sort(function (a, b) { return b.ageing - a.ageing; }).slice(0, 100)
     .map(function (r) {
-      return [r.roleId, r.ageing, r.ageingBucket, r.tatBreach ? "Breach" : "OK", r.criticality, r.positionType,
-        r.joiningDate || "—"];
+      return [r.roleId, r.position, r.function, r.location, r.grade, r.ageing, r.ageingBucket,
+        r.tatBreach ? "Breach" : "—", r.criticality, r.status];
     });
-  makeTable("#ageTable", ["Role ID", "Ageing (d)", "Bucket", "TAT", "Criticality", "Type", "Joining date"], top, { id: "age", rowClick: function (row) { openRoleModal(row[0]); } });
+  makeTable("#ageTable", ["Role", "Title", "Function", "Location", "Grade", "Ageing (d)", "Bucket", "TAT", "Criticality", "Status"],
+    top, { id: "age", rowClick: function (row) { openRoleModal(row[0]); } });
 }
 
 /* ---------- J. critical cases ---------- */
@@ -1138,7 +1154,9 @@ function renderCompare() {
     ["Metric", A.display, B.display],
     ["Budget", A.budget, B.budget], ["Active", A.active, B.active],
     ["Vacancy %", A.vacancyPct, B.vacancyPct], ["Open pipeline", A.openPipeline, B.openPipeline],
-    ["Ageing 90+", (A.aging || {}).b90 || 0, (B.aging || {}).b90 || 0],
+    ["Open roles", (A.tracker || {}).open || 0, (B.tracker || {}).open || 0],
+    ["Ageing 90+", (A.tracker || {}).ageing90plus || 0, (B.tracker || {}).ageing90plus || 0],
+    ["TAT breach", (A.tracker || {}).tatBreach || 0, (B.tracker || {}).tatBreach || 0],
     ["Attrition %", A.attrition, B.attrition], ["PMS goal %", (A.pms || {}).goalSetting, (B.pms || {}).goalSetting],
     ["Risk index", A.riskIndex, B.riskIndex],
     ["Training days", A.training ? A.training.trainingDays : null, B.training ? B.training.trainingDays : null],
@@ -1333,24 +1351,28 @@ function openRoleModal(roleId) {
   var r = (DATA.recruitmentRecords || []).filter(function (x) { return x.roleId === roleId; })[0];
   if (!r) return;
   var rag = ragAge(r.ageing);
-  $("#modalTitle").innerHTML = roleId + " " + dot(rag);
+  var pf = pById(r.portfolio);
+  $("#modalTitle").innerHTML = esc(r.position !== NA ? r.position : roleId) + " " + dot(rag);
   $("#modalBody").innerHTML =
     "<dl class='kv'>" +
+    kv("Role ref", roleId) + kv("HRBP", pf ? pf.display : NA) +
+    kv("Function", r.function) + kv("Sub-function", r.subFunction) +
+    kv("Location", r.location) + kv("Grade", r.grade) +
+    kv("Status", r.status) + kv("Sourcing", r.sourcing) +
+    kv("Recruitment type", r.positionType) + kv("Criticality", r.criticality) +
+    kv("Budgeted year", r.budgetedYear) + kv("Approval", r.approval) +
     kv("Ageing", r.ageing != null ? r.ageing + " days (" + ragWord(rag) + ")" : NA) +
     kv("Ageing bucket", r.ageingBucket) +
-    kv("TAT breach", r.tatBreach ? "Yes (assumed TAT " + DATA.meta.tatAssumptionDays + "d)" : "No") +
-    kv("Criticality", r.criticality) + kv("Position type", r.positionType) +
+    kv("Agreed TAT", r.agreedTat != null ? r.agreedTat + " days" : NA) +
+    kv("TAT breach", r.tatBreach ? "Yes (ageing > agreed TAT)" : "No") +
     kv("Activation date", r.activationDate || NA) + kv("JD finalisation", r.jdDate || NA) +
     kv("Commitment date", r.commitmentDate || NA) + kv("Candidate joining", r.joiningDate || NA) +
     kv("Candidate", r.candidate || NA) +
-    "</dl>" +
-    "<p class='note'>Function, grade, location, status &amp; sourcing are degraded by source anonymisation and shown as Not Available.</p>" +
-    "<div style='display:flex;gap:8px;margin-top:10px'>" +
-    "</div>";
+    "</dl>";
   var bd = $("#modalBody");
   var bar = el("div", { style: "display:flex;gap:8px;margin-top:10px" });
   bar.appendChild(btn("Mark as Priority", function () { toast(roleId + " marked priority"); }));
-  bar.appendChild(btn("Copy summary", function () { copy(roleId + ": ageing " + r.ageing + "d, " + r.ageingBucket + ", criticality " + r.criticality); }));
+  bar.appendChild(btn("Copy summary", function () { copy((r.position !== NA ? r.position : roleId) + " [" + (pf ? pf.display : "") + "]: " + r.function + " · " + r.location + " · status " + r.status + " · ageing " + r.ageing + "d · criticality " + r.criticality); }));
   bd.appendChild(bar);
   $("#modal").classList.add("open");
 }
@@ -1445,7 +1467,7 @@ function buildPrint() {
   ps.forEach(function (p) {
     html += "<tr><td>" + esc(p.display) + "</td><td>" + fmt(p.budget) + "</td><td>" + fmt(p.active) +
       "</td><td>" + pct(p.vacancyPct) + "</td><td>" + pct(p.attrition) + "</td><td>" + fmt(p.openPipeline) +
-      "</td><td>" + fmt((p.aging || {}).b90 || 0) + "</td><td>" + pct((p.pms || {}).goalSetting) +
+      "</td><td>" + fmt((p.tracker || {}).ageing90plus || 0) + "</td><td>" + pct((p.pms || {}).goalSetting) +
       "</td><td>" + esc(p.riskBand || "—") + "</td></tr>";
   });
   html += "</tbody></table>";
@@ -1463,24 +1485,28 @@ function buildPrint() {
 
   // ----- One page per portfolio -----
   ps.forEach(function (p) {
-    var r = p.recruitment || {}, ag = p.aging || {};
+    var trec = (DATA.recruitmentRecords || []).filter(function (x) { return x.portfolio === p.key; });
     function rt(key) { return r[key] ? r[key].total : 0; }
+    function tbk(bk) { return trec.filter(function (x) { return x.ageingBucket === bk; }).length; }
+    function tst(st) { return trec.filter(function (x) { return x.status === st; }).length; }
+    var r = p.recruitment || {};
     html += "<section class='print-page'>";
     html += pHead(p.display, "Portfolio one-page summary");
     html += kpiGrid([
       ["Budget", fmt(p.budget)], ["Active", fmt(p.active)],
       ["Vacancy", fmt(p.vacancy) + " (" + pct(p.vacancyPct) + ")"], ["Attrition", pct(p.attrition)],
       ["Joinings YTD", fmt(p.joiningsYTD)], ["Exits YTD", fmt(p.exitsYTD)],
-      ["Open pipeline", fmt(p.openPipeline)], ["Risk", esc(p.riskBand || "—") + " (" + (p.riskIndex || 0) + ")"],
+      ["Open pipeline", fmt((p.tracker || {}).open || 0)], ["Risk", esc(p.riskBand || "—") + " (" + (p.riskIndex || 0) + ")"],
     ]);
     html += "<div class='p-cols'><div>";
-    html += "<h3>Recruitment funnel</h3><table class='p-tbl'><tbody>" +
-      "<tr><td>WIP</td><td>" + rt("wip") + "</td></tr><tr><td>To be offered</td><td>" + rt("toBeOffered") + "</td></tr>" +
-      "<tr><td>Offered</td><td>" + rt("offered") + "</td></tr><tr><td>Joined YTD</td><td>" + rt("joined") + "</td></tr>" +
-      "<tr><td>Offer declined</td><td>" + rt("offerDeclined") + "</td></tr></tbody></table>";
-    html += "<h3>Ageing (WIP " + fmt(ag.wip || 0) + ")</h3><table class='p-tbl'><tbody>" +
-      "<tr><td>0–30</td><td>" + (ag.b0_30 || 0) + "</td></tr><tr><td>30–60</td><td>" + (ag.b30_60 || 0) + "</td></tr>" +
-      "<tr><td>60–90</td><td>" + (ag.b60_90 || 0) + "</td></tr><tr><td>90+</td><td>" + (ag.b90 || 0) + "</td></tr></tbody></table>";
+    html += "<h3>Recruitment pipeline (live)</h3><table class='p-tbl'><tbody>" +
+      "<tr><td>Yet to Start</td><td>" + tst("Yet to Start") + "</td></tr><tr><td>WIP</td><td>" + tst("WIP") + "</td></tr>" +
+      "<tr><td>To Be Offered</td><td>" + tst("To Be Offered") + "</td></tr><tr><td>Offered</td><td>" + tst("Offered") + "</td></tr>" +
+      "<tr><td>Joined</td><td>" + tst("Joined") + "</td></tr><tr><td>Hold</td><td>" + tst("Hold") + "</td></tr></tbody></table>";
+    html += "<h3>Ageing (open roles)</h3><table class='p-tbl'><tbody>" +
+      "<tr><td>0–30</td><td>" + tbk("0-30") + "</td></tr><tr><td>30–60</td><td>" + tbk("30-60") + "</td></tr>" +
+      "<tr><td>60–90</td><td>" + tbk("60-90") + "</td></tr><tr><td>90–120</td><td>" + tbk("90-120") + "</td></tr>" +
+      "<tr><td>120+</td><td>" + tbk("120+") + "</td></tr><tr><td><b>TAT breach</b></td><td>" + ((p.tracker || {}).tatBreach || 0) + "</td></tr></tbody></table>";
     html += "</div><div>";
     html += "<h3>PMS &amp; capability</h3><table class='p-tbl'><tbody>" +
       "<tr><td>Goal setting</td><td>" + pct((p.pms || {}).goalSetting) + "</td></tr>" +
@@ -1508,16 +1534,13 @@ function buildPrint() {
 
 function leadershipSummary() {
   var a = aggregate();
-  var worstFn = (function () {
-    var g = groupSum(filteredBudget(), "function");
-    return Object.keys(g).map(function (k) { return { k: k, v: g[k].vacant }; }).sort(function (x, y) { return y.v - x.v; })[0];
-  })();
-  var b90 = a.b90;
+  var topFn = topN(countByField(trackerInScope(), "function"), 1)[0];
   var topActions = DATA.actions.filter(function (x) { return ST.hrbp === "all" || x.hrbp === displayName(); }).slice(0, 3);
   return "Portfolio review summary — " + displayName() + " (" + DATA.meta.generatedAt + "):\n" +
-    "Vacancy " + pct(a.vacancyPct) + " (" + a.vacancy + " of " + a.budget + "); pressure highest in " +
-    (worstFn ? worstFn.k : "n/a") + ". " + b90 + " roles ageing beyond 90 days. Attrition " + pct(a.attrition) +
-    " vs company " + pct(weightedCompanyAttr()) + ". PMS goal-setting averaging low — cycle not yet initiated.\n" +
+    "Vacancy " + pct(a.vacancyPct) + " (" + a.vacancy + " of " + a.budget + "). Live pipeline: " + a.trkOpen +
+    " open roles; hiring demand highest in " + (topFn ? topFn[0] + " (" + topFn[1] + ")" : "n/a") + ". " +
+    a.trkB90 + " roles ageing 90+ days, " + a.trkTatBreach + " past agreed TAT. Attrition " + pct(a.attrition) +
+    " vs company " + pct(weightedCompanyAttr()) + ".\n" +
     "Immediate actions:\n" + (topActions.length ? topActions.map(function (x, i) { return (i + 1) + ". " + x.theme + " — " + x.recommendation + " (" + x.hrbp + ")"; }).join("\n") : "1. No threshold breaches.");
 }
 function copy(text) {
@@ -1560,7 +1583,7 @@ function buildKpiDefs() {
     ["Open Pipeline", "WIP + To-Be-Offered + Offered."],
     ["Ageing", "Days a WIP role has been open (tracker numeric)."],
     ["Ageing Bucket", "0-30 / 30-60 / 60-90 / 90-120 / 120+."],
-    ["TAT Breach", "Open beyond assumed TAT (" + DATA.meta.tatAssumptionDays + "d) — tracker TAT field is scrambled."],
+    ["TAT Breach", "A role whose ageing exceeds its own Agreed TAT (per row, from the Recruitment Tracker)."],
     ["Offer-to-Join", "Joined / Offered (note: Joined is YTD, Offered is a snapshot — ratio can exceed 100%)."],
     ["Closure Rate", "Joined / total pipeline."],
     ["Attrition %", "Exits over active (active-weighted at rollup). G<3 · A 3–5 · R>5."],

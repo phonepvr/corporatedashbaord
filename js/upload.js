@@ -18,7 +18,8 @@ var TAT = 45;
 // review labels before matching. Keep in sync with build_data.py.
 var HRBP_CANONICAL = { "shiju": "Shiju", "shijumon": "Shiju" };
 var HRBP_ALIASES = { "aarav": "Dhruv", "kabir": "Shiju", "riya": "Khyati", "nisha": "Chanchal", "meera": "Lincia" };
-var SSC_FOLD = {};   // budget sheet name (lower) -> target portfolio display name
+// SSC OJT trainee pool belongs to Dhruv (occupied folds into Dhruv's Active).
+var SSC_FOLD = { "ssc ojt": "Dhruv" };
 function slug(s) { return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, "") || "portfolio"; }
 function canon(name) { if (name == null) return ""; var key = String(name).replace(/\s+/g, " ").trim(); return HRBP_CANONICAL[key.toLowerCase()] || key; }
 
@@ -187,27 +188,30 @@ function parseReview(wb, MASK) {
     var pl = norm(cell(pi, 2));
     REVIEW_HRBPS.forEach(function (h) { if (pl.toLowerCase() === h.toLowerCase()) out.hrbps[h].pms = { goalSetting: pctv(num(cell(pi, 3))), midYear: norm(cell(pi, 4)) || NA, endYear: norm(cell(pi, 5)) || NA }; });
   }
-  // speakup
+  // speakup milestones
   var su = -1; for (var s1 = 0; s1 < rows.length; s1++) { var t1 = norm(cell(s1, 1)).toLowerCase(); if (t1.indexOf("speak") >= 0 && t1.indexOf("up") >= 0) { su = s1; break; } }
   if (su >= 0) {
     var suCols = {}; readHrbpHeader(su + 1).forEach(function (p) { REVIEW_HRBPS.forEach(function (h) { if (p[0].toLowerCase() === h.toLowerCase()) suCols[h] = p[1]; }); });
     for (var mi2 = su + 2; mi2 < su + 12; mi2++) {
-      var ml = norm(cell(mi2, 2)); if (!ml) continue; if (ml.toLowerCase().indexOf("employee listening") >= 0) break;
+      var ml = norm(cell(mi2, 2)); if (!ml) continue;
+      var mll = ml.toLowerCase(); if (mll.indexOf("listening") >= 0 || mll.indexOf("speak up+") >= 0 || mll.indexOf("scores") >= 0) break;
       var st = {}; Object.keys(suCols).forEach(function (h) { var v = norm(cell(mi2, suCols[h])); st[h] = v || "Pending"; });
       out.speakUpMilestones.push({ milestone: ml, status: st });
     }
   }
-  // engagement
-  var el = -1; for (var e1 = 0; e1 < rows.length; e1++) { if (norm(cell(e1, 1)).toLowerCase().indexOf("employee listening scores") >= 0 || norm(cell(e1, 2)).toLowerCase().indexOf("employee listening scores") >= 0) { el = e1; break; } }
-  if (el >= 0) {
-    var curH = NA;
-    for (var ei = el + 1; ei < rows.length; ei++) {
-      var hc2 = norm(cell(ei, 1)), dept = norm(cell(ei, 2)), sc = cell(ei, 3);
-      if (hc2 && hc2.toLowerCase() === "hrbp") continue;
-      if (hc2 && hc2.toLowerCase() !== "hrbp") curH = hc2;
-      if (dept.toLowerCase() === "demo steel india") { out.benchmark = num(sc); continue; }
+  // Speak-Up / listening scores: anchor on the "Department"/"Survey" header.
+  var elh = -1;
+  for (var e1 = 0; e1 < rows.length; e1++) { if (norm(cell(e1, 2)).toLowerCase() === "department" && norm(cell(e1, 3)).toLowerCase().indexOf("survey") >= 0) { elh = e1; break; } }
+  if (elh >= 0) {
+    var curH = NA, seen = false;
+    for (var ei = elh + 1; ei < rows.length; ei++) {
+      var hc2 = norm(cell(ei, 1)), dept = norm(cell(ei, 2)), score = num(cell(ei, 3));
+      if (!hc2 && blank(dept) && score == null) { if (seen) break; else continue; }
+      var dl = dept.toLowerCase();
+      if (dl.indexOf("top talent") >= 0 || dl.indexOf("readiness") >= 0 || dl.indexOf("hipo") >= 0) break;
+      if (hc2) { curH = hc2; seen = true; }
+      if (!seen && score != null) { out.benchmark = score; continue; }   // company benchmark
       if (blank(dept) || dept.length > 60) continue;
-      var score = num(sc);
       out.engagement.push({ hrbp: curH, department: dept, score: score, scoreLabel: score != null ? String(Math.round(score * 100) / 100) : NA });
     }
   }
@@ -215,11 +219,12 @@ function parseReview(wb, MASK) {
 }
 function classify(text) {
   var t = text.toLowerCase();
-  var cats = [["Compliance", ["compliance", "safety", "ethics", "posh", "audit", "governance"]],
-    ["Pms", ["goal", "performance", "appraisal", "review", "commitment"]],
-    ["Capability", ["learning", "awareness", "training", "workshop", "capability", "synergy", "leadership"]],
-    ["Communication", ["connect", "feedback", "communication", "interaction", "town", "quarterly"]],
-    ["Engagement", ["engagement", "recognition", "reward", "festival", "celebration", "wellbeing", "health", "games", "lunch", "donation", "felicitation", "farewell"]]];
+  var cats = [
+    ["Compliance", ["compliance", "safety", "ethics", "posh", "audit", "vishwakarma", "loto", "work at height", "transgender", "data hygiene", "data clean"]],
+    ["PMS", ["goal setting", "goal settings", "mid-year", "mid year", "end - year", "end-year", "annual review", "kpi", "apr ", "performance", "appraisal", "my commitment", "commitments"]],
+    ["Capability", ["hr xcel", "synergy meet", "training", "learning", "knowledge", "workshop", "samvaad", "academy", "mentor", "succeed", "seed", "lead", "leap", "induction"]],
+    ["Communication", ["sampark", "time out with hod", "coffee with", "interaction", "town hall", "feedback", "connect", "praise points", "report sharing"]],
+    ["Engagement", ["speakup", "speak up", "speak-up", "survey", "recognition", "reward", "r&r", "felicitation", "promotion", "celebration", "festival", "diwali", "ganesh", "navratri", "holi", "christmas", "bday", "birthday", "farewell", "retirement", "sports", "games", "competition", "carrom", "chess", "drawing", "pot lunch", "health", "yoga", "blood donation", "wellbeing", "environment", "plantation", "csr", "voluntary", "new year", "republic day", "independence day", "sankranti", "women's day", "quality month"]]];
   for (var i = 0; i < cats.length; i++) for (var j = 0; j < cats[i][1].length; j++) if (t.indexOf(cats[i][1][j]) >= 0) return cats[i][0];
   return "Culture";
 }
@@ -272,30 +277,50 @@ function parseBudget(wb, MASK) {
   return { records: records, used: used, ignored: ignored, portfolioDisplay: portfolioDisplay };
 }
 
-/* ============================ TRACKER PARSER ============================ */
-function parseTracker(wb, MASK) {
+/* ============================ TRACKER PARSER (real, record-level) ============================ */
+var STATUS_MAP = { "wip": "WIP", "yet to start": "Yet to Start", "tbo": "To Be Offered", "to be offered": "To Be Offered", "offered": "Offered", "joined": "Joined", "confirmation": "Confirmation", "hold": "Hold", "internal movement": "Internal Movement" };
+function titleCase(s) { return String(s).trim().replace(/\w\S*/g, function (w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }); }
+function normStatus(v) { if (blank(v)) return "Unknown"; var k = String(v).replace(/\s+/g, " ").trim().toLowerCase(); return STATUS_MAP[k] || titleCase(v); }
+function normCrit(v) { if (blank(v)) return NA; var k = String(v).trim().toLowerCase(); if (["1", "high", "p1", "critical"].indexOf(k) >= 0) return "High"; if (["2", "medium", "med", "p2"].indexOf(k) >= 0) return "Medium"; if (["3", "low", "p3"].indexOf(k) >= 0) return "Low"; if (["na", "n/a", "#n/a", "`", "-"].indexOf(k) >= 0) return NA; return titleCase(v); }
+function normPType(v) { if (blank(v)) return NA; var k = String(v).trim().toLowerCase(); if (k === "new") return "New"; if (k.indexOf("replac") >= 0) return "Replacement"; if (k.indexOf("carry") >= 0) return "Carry Forwarded"; if (k.indexOf("adhoc") >= 0 || k.indexOf("ad hoc") >= 0) return "Adhoc"; return titleCase(v); }
+function attributeHrbp(raw, keys) { if (blank(raw)) return null; var first = canon(String(raw).split(/\s+/)[0]); var k = slug(first); return keys.indexOf(k) >= 0 ? k : null; }
+function parseTracker(wb, MASK, portfolioKeys) {
+  portfolioKeys = portfolioKeys || [];
   var sn = findSheet(wb, ["Recruitment Tracker ", "Recruitment Tracker"]);
   var ignored = wb.SheetNames.filter(function (s) { return s !== sn; });
   var rows = sn ? sheetRows(wb, sn) : [];
   var hdr = rows[0] || [], idx = {}; hdr.forEach(function (h, i) { idx[norm(h).toLowerCase()] = i; });
-  function col(hint) { for (var k in idx) if (k.indexOf(hint) >= 0) return idx[k]; return null; }
-  var iAge = idx["ageing"] != null ? idx["ageing"] : col("ageing");
-  var iCode = col("position code"), iCand = col("candidate name"), iAct = col("hiring activation"), iJd = col("jd finalisation"),
-    iCommit = col("commitment date"), iJoin = col("candidate joining"), iRepl = col("replacement"), iCrit = col("criticality");
+  function col() { var hints = Array.prototype.slice.call(arguments);
+    for (var a = 0; a < hints.length; a++) if (idx[hints[a]] != null) return idx[hints[a]];
+    for (var b = 0; b < hints.length; b++) { var best = null, bl = 1e9; for (var k in idx) if (k.indexOf(hints[b]) === 0 && k.length < bl) { bl = k.length; best = idx[k]; } if (best != null) return best; }
+    for (var c = 0; c < hints.length; c++) for (var k2 in idx) if (k2.indexOf(hints[c]) >= 0) return idx[k2];
+    return null;
+  }
+  var iBhr = col("fpr from", "bhr"), iAppr = col("approval"), iYear = col("budgeted year"), iType = col("replacement/ new", "replacement"),
+    iPos = idx["position"], iGrade = col("grade"), iFunc = col("function"), iSub = col("sub function"), iLoc = col("location"),
+    iSrc = col("sourcing through"), iTat = col("agreed tat for offer", "agreed tat"), iAge = idx["ageing"], iBucket = col("ageing bucket"),
+    iStatus = col("current status"), iCrit = col("criticality / priority", "criticality"), iCand = col("candidate name"),
+    iAct = col("hiring activation"), iJd = col("jd finalisation"), iCommit = col("commitment date"), iJoin = col("candidate joining");
   function dIso(v) { if (v instanceof Date) return v.getFullYear() + "-" + String(v.getMonth() + 1).padStart(2, "0") + "-" + String(v.getDate()).padStart(2, "0"); return null; }
-  var records = [], ages = [];
+  var records = [], ages = [], unattr = 0;
   for (var r = 1; r < rows.length; r++) {
     var row = rows[r] || []; if (!row.some(function (c) { return !blank(c); })) continue;
     function g(i) { return i != null ? row[i] : null; }
     var age = num(g(iAge)); if (age != null) ages.push(age);
-    var rep = norm(g(iRepl)); rep = rep.toLowerCase() === "new" ? "New" : (rep.toLowerCase().indexOf("replac") >= 0 ? "Replacement" : NA);
-    var cr = norm(g(iCrit)); cr = ["1", "2", "3"].indexOf(cr) >= 0 ? cr : NA;
-    records.push({ roleId: "Role " + String(r).padStart(4, "0"), ageing: age != null ? Math.round(age) : null,
-      ageingBucket: bucket(age), tatBreach: age != null && age > TAT, positionType: rep, criticality: cr,
+    var tat = num(g(iTat)); tat = (tat != null && tat > 0) ? tat : null;
+    var bkt = norm(g(iBucket)) || bucket(age);
+    var pf = attributeHrbp(g(iBhr), portfolioKeys); if (pf == null) unattr++;
+    records.push({ roleId: "Role " + String(r).padStart(4, "0"), portfolio: pf,
+      position: norm(g(iPos)) || NA, "function": norm(g(iFunc)) || NA, subFunction: norm(g(iSub)) || NA,
+      location: norm(g(iLoc)) || NA, grade: norm(g(iGrade)) || NA, positionType: normPType(g(iType)),
+      budgetedYear: norm(g(iYear)) || NA, approval: norm(g(iAppr)) || NA, sourcing: norm(g(iSrc)) || NA,
+      status: normStatus(g(iStatus)), criticality: normCrit(g(iCrit)),
+      ageing: age != null ? Math.round(age) : null, ageingBucket: bkt || NA,
+      agreedTat: tat != null ? Math.round(tat) : null, tatBreach: (age != null && tat != null && age > tat),
       activationDate: dIso(g(iAct)), jdDate: dIso(g(iJd)), commitmentDate: dIso(g(iCommit)), joiningDate: dIso(g(iJoin)),
-      candidate: MASK.cand(g(iCand)), degraded: true });
+      candidate: MASK.cand(g(iCand)) });
   }
-  return { records: records, ages: ages, used: sn ? [sn] : [], ignored: ignored };
+  return { records: records, ages: ages, used: sn ? [sn] : [], ignored: ignored, unattributed: unattr };
 }
 function bucket(a) { if (a == null) return NA; a = +a; return a <= 30 ? "0-30" : a <= 60 ? "30-60" : a <= 90 ? "60-90" : a <= 120 ? "90-120" : "120+"; }
 
@@ -316,8 +341,18 @@ function reconcile(review, portfolioDisplay) {
   });
   return descriptors;
 }
-function assemble(review, budget) {
+function trackerSummary(recs) {
+  var closed = ["Joined", "Confirmation", "Internal Movement"];
+  function c(pred) { return recs.filter(pred).length; }
+  return { total: recs.length, open: c(function (r) { return closed.indexOf(r.status) < 0; }),
+    wip: c(function (r) { return r.status === "WIP"; }), offered: c(function (r) { return r.status === "Offered"; }),
+    joined: c(function (r) { return r.status === "Joined"; }), hold: c(function (r) { return r.status === "Hold"; }),
+    ageing90plus: c(function (r) { return r.ageingBucket === "90-120" || r.ageingBucket === "120+"; }),
+    tatBreach: c(function (r) { return r.tatBreach; }), highCrit: c(function (r) { return r.criticality === "High"; }) };
+}
+function assemble(review, budget, tracker) {
   var byPf = {}; budget.records.forEach(function (r) { (byPf[r.portfolio] = byPf[r.portfolio] || []).push(r); });
+  var trkByPf = {}; ((tracker && tracker.records) || []).forEach(function (r) { if (r.portfolio) (trkByPf[r.portfolio] = trkByPf[r.portfolio] || []).push(r); });
   var descriptors = reconcile(review, budget.portfolioDisplay);
   var ordered = Object.keys(descriptors).map(function (k) { return descriptors[k]; }).sort(function (a, b) {
     var ra = review.hrbps[a.reviewLabel] || {}, rb = review.hrbps[b.reviewLabel] || {};
@@ -336,6 +371,7 @@ function assemble(review, budget) {
     var eng = review.engagement.filter(function (e) { return rl && e.hrbp && e.hrbp.toLowerCase() === rl.toLowerCase() && e.score != null; });
     var lowest = eng.length ? eng.reduce(function (a, b) { return a.score < b.score ? a : b; }) : null;
     return { key: pkey, display: m.display, reviewLabel: rl, budgetSheet: m.budgetSheet, confidence: m.confidence, verify: m.verify,
+      tracker: trackerSummary(trkByPf[pkey] || []),
       budget: budgetN, active: active, vacancy: vac, vacancyPct: (vac != null && budgetN) ? Math.round(vac / budgetN * 1000) / 10 : null,
       joiningsJune: rv.joiningsJune, exitsJune: rv.exitsJune, joiningsYTD: rv.joiningsYTD, exitsYTD: rv.exitsYTD,
       netMovementYTD: (rv.joiningsYTD || 0) - (rv.exitsYTD || 0), future: rv.future, onHold: rv.onHold, delimit: rv.delimit,
@@ -373,33 +409,46 @@ function rollup(portfolios, review) {
   var attr = Math.round(portfolios.reduce(function (n, p) { return n + (p.attrition || 0) * (p.active || 0); }, 0) / totA * 10) / 10;
   return { budget: budget, active: active, vacancy: vac, vacancyPct: budget ? Math.round(vac / budget * 1000) / 10 : null,
     joiningsYTD: s("joiningsYTD"), exitsYTD: s("exitsYTD"), netMovementYTD: s("joiningsYTD") - s("exitsYTD"),
-    attrition: attr, openPipeline: s("openPipeline"), joined: s("joined"), offered: s("offered"), benchmark: review.benchmark || 6.19 };
+    attrition: attr, openPipeline: s("openPipeline"), joined: s("joined"), offered: s("offered"), benchmark: review.benchmark || 8.2 };
 }
 function buildActions(portfolios) {
   var actions = [], aid = 0;
   function add(p, theme, issue, ev, impact, rec, owner, prio) { actions.push({ id: "A" + String(++aid).padStart(3, "0"), hrbp: p.display, theme: theme, issue: issue, evidence: ev, impact: impact, recommendation: rec, owner: owner, due: "This month", priority: prio, status: "Not Started" }); }
   portfolios.forEach(function (p) {
+    var t = p.tracker || {};
     if (p.vacancyPct != null && p.vacancyPct > 20) add(p, "Vacancy", "Vacancy pressure above 20%", "Vacancy " + p.vacancyPct + "% (" + p.vacancy + " of " + p.budget + ")", "Capacity & delivery risk", "Prioritise sourcing; review hold list", "HRBP / TA", "P1");
-    var b90 = p.aging.b90 || 0; if (b90 >= 10) add(p, "Ageing", "Roles ageing beyond 90 days", b90 + " roles in 90+ bucket", "TAT breach / escalation", "Escalate 90+ roles; revisit sourcing", "TA", "P1");
+    var b90 = (p.aging.b90 || 0) || t.ageing90plus || 0; if (b90 >= 10) add(p, "Ageing", "Roles ageing beyond 90 days", b90 + " roles 90+ days", "TAT breach / escalation", "Escalate 90+ roles; revisit sourcing", "TA", "P1");
     if (p.attrition != null && p.attrition > 5) add(p, "Attrition", "Attrition above 5%", "Attrition " + p.attrition + "%", "Talent loss", "Run retention check-ins", "HRBP", "P1");
     if ((p.pms || {}).goalSetting != null && p.pms.goalSetting < 85) add(p, "PMS", "PMS goal-setting below 85%", "Goal setting " + p.pms.goalSetting + "%", "Cycle readiness", "Drive goal-setting completion", "HRBP", "P2");
     if (p.criticalCases.length) add(p, "Business dependency", "Critical roles flagged", p.criticalCases.slice(0, 3).join("; "), "Key role gaps", "Track top-3 critical roles to closure", "HRBP / Business", "P1");
+    if (t.tatBreach) add(p, "TAT", "Roles open beyond agreed TAT", t.tatBreach + " roles past agreed TAT", "Hiring SLA breach", "Escalate TAT-breached roles to TA / business", "TA", "P1");
+    if (t.highCrit) add(p, "Criticality", "High-criticality roles open", t.highCrit + " high-criticality roles in pipeline", "Business-critical gaps", "Prioritise high-criticality roles this month", "HRBP / TA", "P1");
   });
   return actions;
 }
-function dataQuality(tracker, budget, portfolios) {
-  var n = tracker.records.length;
-  var missAge = tracker.records.filter(function (r) { return r.ageing == null; }).length;
-  var missCrit = tracker.records.filter(function (r) { return r.criticality === NA; }).length;
+function dataQuality(tracker, budget, portfolios, unattributed) {
+  var R = tracker.records, n = R.length;
+  function c(pred) { return R.filter(pred).length; }
+  var missAge = c(function (r) { return r.ageing == null; });
+  var missBkt = c(function (r) { return r.ageingBucket === NA; });
+  var missCrit = c(function (r) { return r.criticality === NA; });
+  var missStatus = c(function (r) { return r.status === "Unknown"; });
+  var nonAppr = c(function (r) { return (r.approval || "").toLowerCase().indexOf("non") >= 0; });
+  var missTat = c(function (r) { return r.agreedTat == null; });
+  var joinedNoDate = c(function (r) { return r.status === "Joined" && !r.joiningDate; });
   var issues = [
-    { type: "Scrambled categoricals (tracker)", count: n, detail: "Approval, Function, Grade, Location, Status, Ageing Bucket, Sourcing anonymised to placeholders — not charted as meaningful.", severity: "high" },
-    { type: "Missing numeric ageing", count: missAge, detail: "Tracker rows with no ageing value", severity: "medium" },
-    { type: "Missing criticality", count: missCrit, detail: "Criticality/Priority partly scrambled", severity: "medium" },
+    { type: "Missing ageing (tracker)", count: missAge, detail: "Open roles with no numeric ageing — ageing-day metrics exclude these.", severity: "medium" },
+    { type: "Missing ageing bucket", count: missBkt, detail: "Rows with no ageing bucket recorded.", severity: "low" },
+    { type: "Missing criticality", count: missCrit, detail: "Roles with no Criticality/Priority set.", severity: "medium" },
+    { type: "Unknown status", count: missStatus, detail: "Rows whose Current Status is blank/unmapped.", severity: "medium" },
+    { type: "Non-approved roles", count: nonAppr, detail: "Roles flagged Non-Approved still in the pipeline.", severity: "low" },
+    { type: "Joined without joining date", count: joinedNoDate, detail: "Status = Joined but no joining date.", severity: "low" },
+    { type: "Missing agreed TAT", count: missTat, detail: "Rows with no/invalid agreed TAT — TAT-breach excludes these.", severity: "low" },
   ];
-  var aliasN = portfolios.filter(function (p) { return p.confidence === "alias"; }).length;
-  if (aliasN) issues.push({ type: "Alias-mapped HRBPs", count: aliasN, detail: "Review labels joined to budget portfolios via HRBP_ALIASES (names differ).", severity: "low" });
-  return { completeness: n ? Math.round((1 - (missAge + missCrit) / (2 * n)) * 1000) / 10 : 100,
-    trackerRows: n, budgetRows: budget.records.length, issues: issues, actionRequired: issues.filter(function (i) { return i.severity === "high"; }).length };
+  if (unattributed) issues.push({ type: "Unattributed tracker rows", count: unattributed, detail: "Rows whose 'FPR from TA/BHR' did not match a portfolio (shown under All only).", severity: "medium" });
+  return { completeness: n ? Math.round((1 - (missAge + missCrit + missStatus) / (3 * n)) * 1000) / 10 : 100,
+    trackerRows: n, budgetRows: budget.records.length, unattributed: unattributed || 0, issues: issues,
+    actionRequired: issues.filter(function (i) { return i.severity === "high" || i.severity === "medium"; }).length };
 }
 
 /* ============================ ORCHESTRATION ============================ */
@@ -420,20 +469,21 @@ function parseAll() {
       var review = b.review ? parseReview(b.review, MASK) : reviewFromBaked();
       var bakedPD = {}; baked.portfolios.forEach(function (p) { bakedPD[p.key] = p.display; });
       var budget = b.budget ? parseBudget(b.budget, MASK) : { records: baked.budgetRecords, used: baked.meta.budgetSheetsUsed, ignored: [], portfolioDisplay: bakedPD };
-      var tracker = b.tracker ? parseTracker(b.tracker, MASK) : { records: baked.recruitmentRecords, ages: [], used: [], ignored: [] };
-      var portfolios = assemble(review, budget);
+      var pkeys = Object.keys(budget.portfolioDisplay);
+      var tracker = b.tracker ? parseTracker(b.tracker, MASK, pkeys) : { records: baked.recruitmentRecords, ages: [], used: [], ignored: [], unattributed: 0 };
+      var portfolios = assemble(review, budget, tracker);
       var data = {
         meta: Object.assign({}, baked.meta, {
           empty: false,
           generatedAt: new Date().toISOString().slice(0, 10) + " (uploaded)",
           budgetSheetsUsed: budget.used, ignoredSheets: budget.ignored.concat(tracker.ignored),
           hrbpMap: (review._descriptors || []).map(function (m) { return { display: m.display, reviewLabel: m.reviewLabel || NA, budgetSheet: m.budgetSheet, confidence: m.confidence, verify: m.verify }; }),
-          benchmark: review.benchmark || 6.19,
+          benchmark: review.benchmark || 8.2,
         }),
         kpis: rollup(portfolios, review), portfolios: portfolios,
         budgetRecords: budget.records, recruitmentRecords: tracker.records,
         engagement: review.engagement, speakUpMilestones: review.speakUpMilestones,
-        initiatives: review.initiatives, actions: buildActions(portfolios), dataQuality: dataQuality(tracker, budget, portfolios),
+        initiatives: review.initiatives, actions: buildActions(portfolios), dataQuality: dataQuality(tracker, budget, portfolios, tracker.unattributed),
       };
       // upload-side output guard: ensure no raw names slipped through
       var leaks = guard(data, MASK);
@@ -463,10 +513,16 @@ function reviewFromBaked() {
   var hrbps = {}, names = []; baked.portfolios.forEach(function (p) { if (!p.reviewLabel) return; names.push(p.reviewLabel); hrbps[p.reviewLabel] = { budget: p.budget, active: p.active, joiningsJune: p.joiningsJune, exitsJune: p.exitsJune, joiningsYTD: p.joiningsYTD, exitsYTD: p.exitsYTD, future: p.future, onHold: p.onHold, delimit: p.delimit, attrition: p.attrition, attritionInsight: p.attritionInsight, recruitment: p.recruitment, aging: p.aging, criticalCases: p.criticalCases, pms: p.pms, training: p.training, orgChart: p.orgChart }; });
   return { hrbps: hrbps, hrbpNames: names, engagement: baked.engagement, initiatives: baked.initiatives, benchmark: baked.meta.benchmark, speakUpMilestones: baked.speakUpMilestones };
 }
+var GUARD_SAFE = ["hold", "joined", "offered", "other", "lead", "leap", "seed", "succeed", "new", "none", "review", "pending", "confirmation", "internal", "movement", "medium", "approved", "shift", "sales", "legal", "audit", "stores", "gift"];
 function guard(data, MASK) {
   var leaks = [], names = Object.keys(MASK.e).concat(Object.keys(MASK.c));
   var js = JSON.stringify(data).toLowerCase();
-  names.forEach(function (n) { if (n.length >= 4 && n.indexOf("demo") < 0 && n.indexOf("dummy") < 0 && js.indexOf(n) >= 0) leaks.push(n); });
+  names.forEach(function (n) {
+    n = String(n).replace(/\s+/g, " ").trim();
+    if (n.length < 5 || n.indexOf("demo") >= 0 || n.indexOf("dummy") >= 0 || GUARD_SAFE.indexOf(n) >= 0) return;
+    var re = new RegExp("\\b" + n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b");
+    if (re.test(js)) leaks.push(n);
+  });
   return leaks;
 }
 

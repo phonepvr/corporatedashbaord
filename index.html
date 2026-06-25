@@ -175,7 +175,7 @@
     <section class="section" id="sec-funnel">
       <div class="section-head"><h2 data-info="Pipeline movement from the Monthly Review — WIP → To-Be-Offered → Offered → Joined — plus sourcing-channel and position-type mix.">Recruitment Funnel</h2>
         <span class="q">What's moving, what's stuck, where to intervene?</span>
-        <span class="src">Source: Monthly Review · Recruitment Overview</span></div>
+        <span class="src">Source: Recruitment Tracker (live)</span></div>
       <div class="grid g4" id="funnelMetrics" style="margin-bottom:16px"></div>
       <div class="grid g2">
         <div class="card chart-card"><h3>Pipeline funnel</h3><div class="ctitle">WIP → To-Be-Offered → Offered → Joined</div><div class="chart-box tall"><canvas id="chFunnel"></canvas></div></div>
@@ -183,7 +183,7 @@
       </div>
       <div class="grid g2" style="margin-top:16px">
         <div class="card chart-card"><h3>Pipeline by portfolio</h3><div class="ctitle">Stage composition</div><div class="chart-box"><canvas id="chStageByHrbp"></canvas></div></div>
-        <div class="card chart-card"><h3>Position type &amp; criticality <span class="badge degraded">Partly degraded</span></h3><div class="ctitle">From tracker (New survives; others flagged)</div><div class="chart-box"><canvas id="chPosType"></canvas></div></div>
+        <div class="card chart-card"><h3>Where is hiring demand concentrated?</h3><div class="ctitle">Open roles by function (top 8)</div><div class="chart-box"><canvas id="chPosType"></canvas></div></div>
       </div>
     </section>
 
@@ -191,13 +191,13 @@
     <section class="section" id="sec-ageing">
       <div class="section-head"><h2 data-info="How long open roles have been ageing — bucketed from the review and as a numeric distribution from the tracker — against an assumed 45-day TAT.">Ageing &amp; TAT Risk</h2>
         <span class="q">Which roles age beyond limits?</span>
-        <span class="src">Buckets: Monthly Review · Scatter: tracker (numeric)</span></div>
+        <span class="src">Source: Recruitment Tracker (live)</span></div>
       <div class="grid g2">
         <div class="card chart-card"><h3>Ageing bucket distribution</h3><div class="ctitle">WIP by 0-30 / 30-60 / 60-90 / 90+</div><div class="chart-box tall"><canvas id="chAgeBuckets"></canvas></div></div>
         <div class="card chart-card"><h3>Numeric ageing distribution</h3><div class="ctitle">Tracker ageing days vs TAT threshold</div><div class="chart-box tall"><canvas id="chAgeHist"></canvas></div></div>
       </div>
       <div class="card analyst-only" style="margin-top:16px">
-        <h3 style="font-size:13px;margin-bottom:8px" data-info="Open roles ranked by ageing days (masked IDs). TAT breach = ageing beyond the assumed 45-day target. Tracker categoricals are degraded by anonymisation.">Top ageing roles <span class="badge degraded">Tracker categoricals degraded</span></h3>
+        <h3 style="font-size:13px;margin-bottom:8px" data-info="Open roles ranked by ageing days (masked role refs). TAT breach = ageing beyond each role's own Agreed TAT. From the live Recruitment Tracker.">Top ageing roles</h3>
         <div id="ageTable"></div>
       </div>
     </section>
@@ -277,14 +277,12 @@
 
     <!-- ================= P. DATA QUALITY ================= -->
     <section class="section" id="sec-dq">
-      <div class="section-head"><h2 data-info="Completeness and data issues computed at load time, including which Recruitment Tracker fields are degraded by source anonymisation.">Data Quality &amp; Governance</h2>
+      <div class="section-head"><h2 data-info="Completeness and data issues computed at load time over the live Recruitment Tracker — missing ageing/criticality/status, TAT gaps, unattributed rows — so you know what to trust before acting.">Data Quality &amp; Governance</h2>
         <span class="q">Can we trust the data enough to act?</span>
         <span class="src">Computed at bake time</span></div>
       <div class="grid g4" id="dqMetrics" style="margin-bottom:16px"></div>
       <div class="card">
-        <div class="dq-banner">⚠ <span>Categorical fields in the Recruitment Tracker (status, function, grade, location, sourcing,
-          ageing bucket) were degraded by source anonymisation. Counts by status/function are taken from the
-          <b>Monthly Review</b>, never from those scrambled tracker columns.</span></div>
+        <div class="dq-banner">ℹ <span>Recruitment metrics are driven by the <b>live Recruitment Tracker</b> (real status, function, sourcing, ageing, TAT, criticality), attributed to each HRBP. The checks below flag rows with missing or inconsistent fields so you know what to trust before acting.</span></div>
         <div id="dqTable"></div>
       </div>
     </section>

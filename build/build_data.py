@@ -92,11 +92,11 @@ def canon(name):
         return ""
     key = re.sub(r"\s+", " ", str(name)).strip()
     return HRBP_CANONICAL.get(key.lower(), key)
-# Optional: fold a budget detail sheet into another portfolio instead of letting
-# it stand alone (e.g. a shared trainee pool). Empty by default -> every detail
-# sheet becomes its own portfolio.  key/value are matched case-insensitively.
+# Fold a budget detail sheet into another portfolio instead of letting it stand
+# alone.  The SSC OJT trainee pool belongs to Dhruv's portfolio: Dhruv sheet
+# occupied (612) + SSC OJT occupied (110) = 722 = the review's Active for Dhruv.
 #   budget sheet name (lower) -> target portfolio display name
-SSC_FOLD = {}
+SSC_FOLD = {"ssc ojt": "Dhruv"}
 
 # Sheets to detect-but-ignore for record parsing (pivots / scratch / empty).
 IGNORE_SHEET_HINTS = [
@@ -455,7 +455,7 @@ def parse_review(path):
             lbl = norm(cell(i, 2))
             if not lbl:
                 continue
-            if "employee listening" in lbl.lower():
+            if "listening" in lbl.lower() or "speak up+" in lbl.lower() or "scores" in lbl.lower():
                 break
             ms = {"milestone": lbl, "status": {}}
             for h, c in su_cols.items():
@@ -464,32 +464,38 @@ def parse_review(path):
             milestones.append(ms)
         out["speakUpMilestones"] = milestones
 
-    # ---- Employee Listening Scores ------------------------------------------
-    el_start = None
-    for i, r in enumerate(rows):
-        if "employee listening scores" in norm(cell(i, 1)).lower() or \
-           "employee listening scores" in norm(cell(i, 2)).lower():
-            el_start = i
+    # ---- Speak-Up / Listening scores: company benchmark + per-department -----
+    # Anchor on the table header ("Department" + "...Survey..."). The company
+    # benchmark (e.g. "AMNS India") is the scored row BEFORE the first HRBP label.
+    el_hdr = None
+    for i in range(len(rows)):
+        if norm(cell(i, 2)).lower() == "department" and "survey" in norm(cell(i, 3)).lower():
+            el_hdr = i
             break
-    if el_start is not None:
+    if el_hdr is not None:
         current_hrbp = NOT_AVAILABLE
-        for i in range(el_start + 1, len(rows)):
+        seen_hrbp = False
+        for i in range(el_hdr + 1, len(rows)):
             hrbp_cell = norm(cell(i, 1))
             dept = norm(cell(i, 2))
-            score_raw = cell(i, 3)
-            if hrbp_cell and hrbp_cell.lower() == "hrbp":
+            score = num(cell(i, 3))
+            if not hrbp_cell and is_blank(dept) and score is None:
+                if seen_hrbp:
+                    break          # blank row after the data -> section end
                 continue
-            if hrbp_cell and hrbp_cell.lower() != "hrbp":
+            low_dept = dept.lower()
+            if "top talent" in low_dept or "readiness" in low_dept or "hipo" in low_dept:
+                break              # next section
+            if hrbp_cell:
                 current_hrbp = hrbp_cell
-            if dept.lower() == "demo steel india":
-                out["benchmark"] = num(score_raw)
+                seen_hrbp = True
+            if not seen_hrbp and score is not None:
+                out["benchmark"] = score      # company-level benchmark row
                 continue
-            # skip leaked free-text rows (no score or NA-with-longtext)
             if is_blank(dept) or len(dept) > 60:
                 continue
-            score = num(score_raw)
             out["engagement"].append({
-                "hrbp": current_hrbp if current_hrbp != "HRBP" else NOT_AVAILABLE,
+                "hrbp": current_hrbp,
                 "department": dept,
                 "score": score,
                 "scoreLabel": (str(round(score, 2)) if score is not None else NOT_AVAILABLE),
@@ -499,18 +505,27 @@ def parse_review(path):
 
 
 EVENT_CATEGORIES = [
-    ("compliance", ["compliance", "safety", "ethics", "posh", "audit", "governance"]),
-    ("pms", ["goal", "performance", "appraisal", "review", "commitment"]),
-    ("capability", ["learning", "awareness", "training", "workshop", "capability", "synergy", "leadership"]),
-    ("communication", ["connect", "feedback", "communication", "interaction", "town", "quarterly"]),
-    ("engagement", ["engagement", "recognition", "reward", "festival", "celebration",
-                    "wellbeing", "health", "games", "lunch", "donation", "felicitation", "farewell"]),
+    ("Compliance", ["compliance", "safety", "ethics", "posh", "audit", "vishwakarma", "loto",
+                    "work at height", "transgender", "data hygiene", "data clean"]),
+    ("PMS", ["goal setting", "goal settings", "mid-year", "mid year", "end - year", "end-year",
+             "annual review", "kpi", "apr ", "performance", "appraisal", "my commitment", "commitments"]),
+    ("Capability", ["hr xcel", "synergy meet", "training", "learning", "knowledge", "workshop",
+                    "samvaad", "academy", "mentor", "succeed", "seed", "lead", "leap", "induction"]),
+    ("Communication", ["sampark", "time out with hod", "coffee with", "interaction", "town hall",
+                       "feedback", "connect", "praise points", "report sharing"]),
+    ("Engagement", ["speakup", "speak up", "speak-up", "survey", "recognition", "reward", "r&r",
+                    "felicitation", "promotion", "celebration", "festival", "diwali", "ganesh",
+                    "navratri", "holi", "christmas", "bday", "birthday", "farewell", "retirement",
+                    "sports", "games", "competition", "carrom", "chess", "drawing", "pot lunch",
+                    "health", "yoga", "blood donation", "wellbeing", "environment", "plantation",
+                    "csr", "voluntary", "new year", "republic day", "independence day", "sankranti",
+                    "women's day", "quality month"]),
 ]
 def classify_event(text):
     t = text.lower()
     for cat, kws in EVENT_CATEGORIES:
         if any(k in t for k in kws):
-            return cat.capitalize()
+            return cat
     return "Culture"
 
 
@@ -670,39 +685,107 @@ def parse_budget(path):
 
 
 # ==============================================================================
-# 4. RECRUITMENT TRACKER — heavily degraded. Keep only trustworthy fields.
+# 4. RECRUITMENT TRACKER — the live, record-level recruitment source (REAL data).
+#    Per-role status, function, location, grade, sourcing, ageing, TAT, criticality.
+#    Each row is attributed to an HRBP via the "FPR from TA/BHR" column.
 # ==============================================================================
-def parse_tracker(path):
+# Normalise the real, free-typed categorical values into a stable taxonomy.
+STATUS_MAP = {
+    "wip": "WIP", "yet to start": "Yet to Start", "tbo": "To Be Offered",
+    "to be offered": "To Be Offered", "offered": "Offered", "joined": "Joined",
+    "confirmation": "Confirmation", "hold": "Hold", "internal movement": "Internal Movement",
+}
+PIPELINE_ORDER = ["Yet to Start", "WIP", "To Be Offered", "Offered", "Joined", "Confirmation"]
+PIPELINE_SIDE = ["Hold", "Internal Movement"]
+
+def norm_status(v):
+    if is_blank(v):
+        return "Unknown"
+    k = re.sub(r"\s+", " ", str(v)).strip().lower()
+    return STATUS_MAP.get(k, str(v).strip().title())
+
+def norm_criticality(v):
+    if is_blank(v):
+        return NOT_AVAILABLE
+    k = str(v).strip().lower()
+    if k in ("1", "high", "p1", "critical"):
+        return "High"
+    if k in ("2", "medium", "med", "p2"):
+        return "Medium"
+    if k in ("3", "low", "p3"):
+        return "Low"
+    if k in ("na", "n/a", "#n/a", "`", "-"):
+        return NOT_AVAILABLE
+    return str(v).strip().title()
+
+def norm_postype(v):
+    if is_blank(v):
+        return NOT_AVAILABLE
+    k = str(v).strip().lower()
+    if k == "new":           return "New"
+    if "replac" in k:        return "Replacement"
+    if "carry" in k:         return "Carry Forwarded"
+    if "adhoc" in k or "ad hoc" in k: return "Adhoc"
+    return str(v).strip().title()
+
+def attribute_hrbp(raw, portfolio_keys):
+    """Map the 'FPR from TA/BHR' value (e.g. 'Dhruv Vyas') to a portfolio key by
+    its first name, via the canonical map. Returns key or None."""
+    if is_blank(raw):
+        return None
+    first = canon(str(raw).split()[0])
+    k = slug(first)
+    return k if k in portfolio_keys else None
+
+def parse_tracker(path, portfolio_keys=None):
+    portfolio_keys = portfolio_keys or set()
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     sn = find_sheet(wb, "Recruitment Tracker ", "Recruitment Tracker")
     used = [sn] if sn else []
     ignored = [s for s in wb.sheetnames if s != sn]
     records = []
     ageing_values = []
+    unattributed = 0
     if sn:
         ws = wb[sn]
         rows = [list(r) for r in ws.iter_rows(values_only=True)]
         header = rows[0] if rows else []
         idx = {norm(h).lower(): i for i, h in enumerate(header)}
-        def col(name_hint, default=None):
-            for k, i in idx.items():
-                if name_hint in k:
-                    return i
-            return default
-        i_sno = col("s_no", 0)
-        i_ageing = col("ageing", None)
-        # 'ageing bucket' also contains 'ageing'; pick the exact numeric 'ageing'
-        for k, i in idx.items():
-            if k == "ageing":
-                i_ageing = i
-        i_poscode = col("position code")
+        def col(*hints):
+            # exact match first, then SHORTEST key that starts with the hint
+            # (so "position" picks the title, not "position code"), then contains.
+            for hint in hints:
+                if hint in idx:
+                    return idx[hint]
+            for hint in hints:
+                cands = [(len(k), i) for k, i in idx.items() if k.startswith(hint)]
+                if cands:
+                    return min(cands)[1]
+            for hint in hints:
+                for k, i in idx.items():
+                    if hint in k:
+                        return i
+            return None
+        i_bhr = col("fpr from", "bhr")
+        i_appr = col("approval")
+        i_year = col("budgeted year")
+        i_type = col("replacement/ new", "replacement")
+        i_pos = idx.get("position")                 # role TITLE (exact); NOT position code
+        i_grade = col("grade")
+        i_func = col("function")
+        i_subfn = col("sub function")
+        i_loc = col("location")
+        i_src = col("sourcing through")
+        i_tat = col("agreed tat for offer", "agreed tat")
+        i_ageing = idx.get("ageing")
+        i_bucket = col("ageing bucket")
+        i_status = col("current status")
+        i_crit = col("criticality / priority", "criticality")
         i_cand = col("candidate name")
         i_act = col("hiring activation")
         i_jd = col("jd finalisation")
         i_commit = col("commitment date")
         i_join = col("candidate joining")
-        i_repl = col("replacement")
-        i_crit = col("criticality")
 
         def date_iso(v):
             if isinstance(v, (_dt.datetime, _dt.date)):
@@ -717,29 +800,39 @@ def parse_tracker(path):
             ageing = num(g(i_ageing))
             if ageing is not None:
                 ageing_values.append(ageing)
-            # 'Replacement/New' partially real ("New" survives)
-            repl_raw = norm(g(i_repl))
-            repl = "New" if repl_raw.lower() == "new" else ("Replacement" if "replac" in repl_raw.lower() else NOT_AVAILABLE)
-            crit_raw = norm(g(i_crit))
-            crit = crit_raw if crit_raw in ("1", "2", "3") else NOT_AVAILABLE
+            tat = num(g(i_tat))
+            tat = tat if (tat is not None and tat > 0) else None   # drop the -189 outlier
+            bucket = norm(g(i_bucket)) or ageing_bucket(ageing)
+            pf = attribute_hrbp(g(i_bhr), portfolio_keys)
+            if pf is None:
+                unattributed += 1
             records.append({
                 "roleId": MASK.role(ri),
+                "portfolio": pf,                                   # HRBP attribution
+                "position": norm(g(i_pos)) or NOT_AVAILABLE,       # role title (safe)
+                "function": norm(g(i_func)) or NOT_AVAILABLE,
+                "subFunction": norm(g(i_subfn)) or NOT_AVAILABLE,
+                "location": norm(g(i_loc)) or NOT_AVAILABLE,
+                "grade": norm(g(i_grade)) or NOT_AVAILABLE,
+                "positionType": norm_postype(g(i_type)),
+                "budgetedYear": norm(g(i_year)) or NOT_AVAILABLE,
+                "approval": norm(g(i_appr)) or NOT_AVAILABLE,
+                "sourcing": norm(g(i_src)) or NOT_AVAILABLE,
+                "status": norm_status(g(i_status)),
+                "criticality": norm_criticality(g(i_crit)),
                 "ageing": int(ageing) if ageing is not None else None,
-                "ageingBucket": ageing_bucket(ageing),
-                "tatBreach": (ageing is not None and ageing > DEFAULT_TAT_DAYS),
-                "positionType": repl,
-                "criticality": crit,
+                "ageingBucket": bucket if bucket else NOT_AVAILABLE,
+                "agreedTat": int(tat) if tat is not None else None,
+                "tatBreach": (ageing is not None and tat is not None and ageing > tat),
                 "activationDate": date_iso(g(i_act)),
                 "jdDate": date_iso(g(i_jd)),
                 "commitmentDate": date_iso(g(i_commit)),
                 "joiningDate": date_iso(g(i_join)),
-                # masked candidate; emp code / name never emitted raw
-                "candidate": MASK.candidate(g(i_cand)),
-                # degraded categoricals are explicitly NOT emitted as if meaningful
-                "degraded": True,
+                "candidate": MASK.candidate(g(i_cand)),            # PII masked
+                # 'Reports to' (supervisor name) is intentionally NOT emitted.
             })
     wb.close()
-    return records, ageing_values, used, ignored
+    return records, ageing_values, used, ignored, unattributed
 
 def ageing_bucket(a):
     if a is None:
@@ -781,11 +874,30 @@ def reconcile(review, portfolio_display):
                                    "budgetSheet": disp, "confidence": "budget-only", "verify": False})
     return descriptors
 
-def assemble(review, budget_records, portfolio_display):
+def tracker_summary(recs):
+    """Light per-portfolio recruitment summary from the real tracker records."""
+    closed = ("Joined", "Confirmation", "Internal Movement")
+    return {
+        "total": len(recs),
+        "open": sum(1 for r in recs if r["status"] not in closed),
+        "wip": sum(1 for r in recs if r["status"] == "WIP"),
+        "offered": sum(1 for r in recs if r["status"] == "Offered"),
+        "joined": sum(1 for r in recs if r["status"] == "Joined"),
+        "hold": sum(1 for r in recs if r["status"] == "Hold"),
+        "ageing90plus": sum(1 for r in recs if r["ageingBucket"] in ("90-120", "120+")),
+        "tatBreach": sum(1 for r in recs if r["tatBreach"]),
+        "highCrit": sum(1 for r in recs if r["criticality"] == "High"),
+    }
+
+def assemble(review, budget_records, portfolio_display, tracker_records=None):
     portfolios = []
     by_pf = {}
     for r in budget_records:
         by_pf.setdefault(r["portfolio"], []).append(r)
+    trk_by_pf = {}
+    for r in (tracker_records or []):
+        if r.get("portfolio"):
+            trk_by_pf.setdefault(r["portfolio"], []).append(r)
 
     descriptors = reconcile(review, portfolio_display)
     # order by budget size desc, then by record count desc
@@ -833,6 +945,8 @@ def assemble(review, budget_records, portfolio_display):
                if rl and e["hrbp"].lower() == rl.lower() and e["score"] is not None]
         lowest = min(eng, key=lambda e: e["score"]) if eng else None
 
+        trk = tracker_summary(trk_by_pf.get(pkey, []))
+
         portfolios.append({
             "key": pkey,
             "display": m["display"],
@@ -840,6 +954,7 @@ def assemble(review, budget_records, portfolio_display):
             "budgetSheet": m["budgetSheet"],
             "confidence": m["confidence"],
             "verify": m["verify"],
+            "tracker": trk,
             # headcount
             "budget": budget, "active": active,
             "vacancy": vacancy, "vacancyPct": vacancyPct,
@@ -955,64 +1070,85 @@ def build_actions(portfolios):
             add(p, "Business dependency", "Critical roles flagged",
                 "; ".join(p["criticalCases"][:3]), "Key role gaps",
                 "Track top-3 critical roles to closure", "HRBP / Business", "P1")
+        trk = p.get("tracker") or {}
+        if trk.get("tatBreach"):
+            add(p, "TAT", "Roles open beyond agreed TAT",
+                "%d roles past their agreed TAT" % trk["tatBreach"], "Hiring SLA breach",
+                "Escalate TAT-breached roles to TA / business", "TA", "P1")
+        if trk.get("highCrit"):
+            add(p, "Criticality", "High-criticality roles open",
+                "%d high-criticality roles in pipeline" % trk["highCrit"], "Business-critical gaps",
+                "Prioritise high-criticality roles this month", "HRBP / TA", "P1")
     return actions
 
-def data_quality(tracker_records, budget_records, portfolios, ageing_values):
+def data_quality(tracker_records, budget_records, portfolios, ageing_values, unattributed=0):
     issues = []
     def add(kind, count, detail, severity):
         issues.append({"type": kind, "count": count, "detail": detail, "severity": severity})
 
     n_tr = len(tracker_records)
     miss_ageing = sum(1 for r in tracker_records if r["ageing"] is None)
-    miss_commit = sum(1 for r in tracker_records if not r["commitmentDate"])
-    miss_join = sum(1 for r in tracker_records if not r["joiningDate"])
+    miss_bucket = sum(1 for r in tracker_records if r["ageingBucket"] == NOT_AVAILABLE)
     miss_crit = sum(1 for r in tracker_records if r["criticality"] == NOT_AVAILABLE)
-    add("Scrambled categoricals (tracker)", n_tr,
-        "Approval, Function, Sub-Function, Grade, Location, Current Status, Ageing Bucket, "
-        "Sourcing were anonymised to placeholders — NOT charted as meaningful.", "high")
-    add("Missing numeric ageing", miss_ageing, "Tracker rows with no ageing value", "medium")
-    add("Missing commitment date", miss_commit, "Tracker rows without a commitment date", "low")
-    add("Joined without joining date", 0, "Status taxonomy degraded in tracker — derived from review instead", "low")
-    add("Missing criticality", miss_crit, "Criticality/Priority partly scrambled", "medium")
+    miss_status = sum(1 for r in tracker_records if r["status"] == "Unknown")
+    non_appr = sum(1 for r in tracker_records if "non" in (r["approval"] or "").lower())
+    miss_tat = sum(1 for r in tracker_records if r["agreedTat"] is None)
+    joined_no_date = sum(1 for r in tracker_records if r["status"] == "Joined" and not r["joiningDate"])
 
-    # budget side
+    add("Missing ageing (tracker)", miss_ageing,
+        "Open roles with no numeric ageing — ageing-day metrics exclude these.", "medium")
+    add("Missing ageing bucket", miss_bucket, "Rows with no ageing bucket recorded.", "low")
+    add("Missing criticality", miss_crit, "Roles with no Criticality/Priority set.", "medium")
+    add("Unknown status", miss_status, "Rows whose Current Status is blank/unmapped.", "medium")
+    add("Non-approved roles", non_appr, "Roles flagged Non-Approved still in the pipeline.", "low")
+    add("Joined without joining date", joined_no_date, "Status = Joined but no joining date.", "low")
+    add("Missing agreed TAT", miss_tat, "Rows with no (or invalid) agreed TAT — TAT-breach excludes these.", "low")
+    if unattributed:
+        add("Unattributed tracker rows", unattributed,
+            "Rows whose 'FPR from TA/BHR' did not match a portfolio (shown under All only).", "medium")
     miss_grade = sum(1 for r in budget_records if r["grade"] == NOT_AVAILABLE)
-    add("Missing grade (budget)", miss_grade, "Budget rows without a usable grade", "low")
-    # HRBP joins that relied on the HRBP_ALIASES fallback (not a direct name match)
-    alias_joins = sum(1 for p in portfolios if p.get("confidence") == "alias")
-    if alias_joins:
-        add("Alias-mapped HRBPs", alias_joins,
-            "Review labels joined to budget portfolios via HRBP_ALIASES (names differ). "
-            "Empty HRBP_ALIASES once review and budget use the same names.", "low")
+    add("Missing grade (budget)", miss_grade, "Budget rows without a usable grade.", "low")
 
-    total_fields = n_tr if n_tr else 1
-    completeness = round(100 * (1 - (miss_ageing + miss_crit) / (2 * total_fields)), 1) if n_tr else 100.0
+    total = n_tr if n_tr else 1
+    # completeness over the key actionable fields
+    completeness = round(100 * (1 - (miss_ageing + miss_crit + miss_status) / (3 * total)), 1) if n_tr else 100.0
     return {
         "completeness": completeness,
         "trackerRows": n_tr,
         "budgetRows": len(budget_records),
         "ageingMin": min(ageing_values) if ageing_values else None,
         "ageingMax": max(ageing_values) if ageing_values else None,
+        "unattributed": unattributed,
         "issues": issues,
-        "actionRequired": sum(1 for i in issues if i["severity"] == "high"),
+        "actionRequired": sum(1 for i in issues if i["severity"] in ("high", "medium")),
     }
 
 
 # ==============================================================================
 # 7. OUTPUT GUARD — fail loudly if PII leaks into data.js
 # ==============================================================================
+# Enum / common-text words that may coincide with a (masked) first name but are
+# NOT a leak when they appear in the output (statuses, programmes, etc.).
+GUARD_SAFE_WORDS = {
+    "hold", "joined", "offered", "other", "lead", "leap", "seed", "succeed",
+    "new", "none", "review", "pending", "confirmation", "internal", "movement",
+    "medium", "approved", "shift", "sales", "legal", "audit", "stores", "gift",
+}
 def output_guard(js_text, source_names):
     problems = []
     low = js_text.lower()
     for name in source_names:
-        nm = name.strip().lower()
-        if len(nm) >= 4 and nm in low and "demo" not in nm and "dummy" not in nm:
+        nm = re.sub(r"\s+", " ", str(name)).strip().lower()
+        if len(nm) < 5 or "demo" in nm or "dummy" in nm:
+            continue
+        if nm in GUARD_SAFE_WORDS:
+            continue
+        # whole-word/standalone match only (avoids "dev" inside "Development")
+        if re.search(r"\b" + re.escape(nm) + r"\b", low):
             problems.append("source name leaked: %r" % name)
-    # emp-code-shaped 6-8 digit runs inside quoted values
+    # emp-code-shaped 6-8 digit runs inside quoted values (codes are dropped)
     for m in re.finditer(r'"[^"]*\b(\d{6,8})\b[^"]*"', js_text):
-        ctx = m.group(0)
-        # position ids / codes intentionally dropped; flag any stray
-        problems.append("possible emp-code-shaped value: %s" % ctx[:60])
+        problems.append("possible emp-code-shaped value: %s" % m.group(0)[:60])
     return problems
 
 
@@ -1055,16 +1191,19 @@ def main():
     print("      portfolios discovered:", list(portfolio_display.values()))
     print("      records:", len(budget_records))
 
-    print("[3/5] Parsing Recruitment Tracker (degraded)...")
-    tracker_records, ageing_values, t_used, t_ignored = parse_tracker(p_tracker)
+    print("[3/5] Parsing Recruitment Tracker (record-level, real)...")
+    portfolio_keys = set(portfolio_display.keys())
+    tracker_records, ageing_values, t_used, t_ignored, t_unattr = parse_tracker(p_tracker, portfolio_keys)
+    attributed = sum(1 for r in tracker_records if r.get("portfolio"))
     print("      tracker rows:", len(tracker_records),
-          "| numeric ageing present:", len(ageing_values))
+          "| attributed to HRBP:", attributed, "| unattributed:", t_unattr,
+          "| numeric ageing:", len(ageing_values))
 
     print("[4/5] Assembling portfolios + KPIs...")
-    portfolios = assemble(review, budget_records, portfolio_display)
+    portfolios = assemble(review, budget_records, portfolio_display, tracker_records)
     kpis = rollup_kpis(portfolios, review)
     actions = build_actions(portfolios)
-    dq = data_quality(tracker_records, budget_records, portfolios, ageing_values)
+    dq = data_quality(tracker_records, budget_records, portfolios, ageing_values, t_unattr)
 
     hrbp_map_view = []
     for m in review.get("_descriptors", []):
@@ -1128,7 +1267,7 @@ def main():
     print("  Budget detail sheets used :", ", ".join(b_used))
     print("  Ignored / pivot sheets    :", ", ".join(sorted(set(b_ignored + t_ignored))))
     print("  Budget records   :", len(budget_records))
-    print("  Tracker records  :", len(tracker_records), "(degraded — numeric/date only)")
+    print("  Tracker records  :", len(tracker_records), "(record-level, HRBP-attributed)")
     print("  Engagement depts :", len(review["engagement"]))
     print("  Initiatives      :", len(review["initiatives"]))
     print("  Derived actions  :", len(actions))
