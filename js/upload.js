@@ -419,6 +419,7 @@ function parseAll() {
       var portfolios = assemble(review, budget);
       var data = {
         meta: Object.assign({}, baked.meta, {
+          empty: false,
           generatedAt: new Date().toISOString().slice(0, 10) + " (uploaded)",
           budgetSheetsUsed: budget.used, ignoredSheets: budget.ignored.concat(tracker.ignored),
           hrbpMap: (review._descriptors || []).map(function (m) { return { display: m.display, reviewLabel: m.reviewLabel || NA, budgetSheet: m.budgetSheet, confidence: m.confidence, verify: m.verify }; }),
@@ -472,9 +473,9 @@ document.addEventListener("DOMContentLoaded", function () {
   var rb = document.getElementById("btnRestoreBaked");
   if (rb) rb.onclick = function () {
     window.__setDashboardData(baked);
-    document.getElementById("loadChip").className = "status-chip baked";
-    document.getElementById("loadChip").textContent = "Demo data loaded (baked)";
-    status("Restored baked demo data.");
+    document.getElementById("loadChip").className = "status-chip empty";
+    document.getElementById("loadChip").textContent = "No data loaded";
+    status("Cleared loaded data.");
   };
 });
 })();

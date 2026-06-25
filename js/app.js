@@ -8,11 +8,22 @@
 
 // ---------- state ----------
 var DATA = window.DASHBOARD_DATA;          // active dataset (swappable via upload)
-window.__setDashboardData = function (d) { DATA = d; App.fullRender(); };
+window.__setDashboardData = function (d) {
+  DATA = d;
+  ST.hrbp = "all"; ST.filters = {};
+  buildHrbpSelector();
+  buildFilterBar();
+  buildCompareSelectors();
+  buildKpiDefs();
+  renderSourceSummary();
+  if (DATA.meta && DATA.meta.empty) { ST.activeView = "sec-exec"; }
+  App.fullRender();
+};
 
 var ST = {
   hrbp: "all",          // 'all' or portfolio key
   scenario: "current",
+  activeView: "sec-exec",
   view: "exec",         // exec | analyst
   filters: {},          // {dim: value}
   charts: {},           // chart instances by canvas id
@@ -160,87 +171,132 @@ App.init = function () {
   $("#dashSub").textContent = DATA.meta.subtitle;
   $("#updatedChip").textContent = "Updated " + DATA.meta.generatedAt;
   buildHrbpSelector();
-  buildScrollspy();
+  buildNav();
   buildQuickViews();
   buildFilterBar();
   buildKpiDefs();
   buildCompareSelectors();
   wireControls();
   renderSourceSummary();
-  App.fullRender();
-  setupScrollSpyObserver();
   applyView();
+  setVisibility();
+  setNavActive();
+  App.fullRender();
 };
+
+// Render only the CURRENTLY ACTIVE view (charts size correctly when visible).
+function renderActive() {
+  var fn = VIEW_RENDER[ST.activeView];
+  if (fn) { try { fn(); } catch (e) { console.error(e); } }
+  applyView();
+}
 
 App.fullRender = function () {
-  renderKpis();
-  renderStory();
-  renderComparison();
-  renderHeadcount();
-  renderFunnel();
-  renderAgeing();
-  renderCritical();
-  renderAttrition();
-  renderPms();
-  renderEngagement();
-  renderTraining();
-  renderInitiatives();
-  renderDataQuality();
-  renderActions();
-  renderCompare();
+  $("#updatedChip").textContent = DATA.meta.empty ? "No data" : "Updated " + DATA.meta.generatedAt;
+  buildHrbpSelector();
+  toggleEmpty();
   renderFilterChips();
+  renderActive();
 };
 
-/* ---------- selectors / nav ---------- */
+/* ---------- selectors / tabbed nav ---------- */
 function buildHrbpSelector() {
   var sel = $("#hrbpSel");
+  var cur = sel.value || "all";
   sel.innerHTML = "";
   sel.appendChild(el("option", { value: "all" }, "All HRBPs"));
   portfolios().forEach(function (p) {
-    var o = el("option", { value: p.key }, p.display + (p.verify ? " ⚠" : ""));
-    sel.appendChild(o);
+    sel.appendChild(el("option", { value: p.key }, p.display));
   });
+  sel.value = portfolios().some(function (p) { return p.key === cur; }) ? cur : "all";
+  if (sel.value !== ST.hrbp) ST.hrbp = sel.value;
 }
-var SECTIONS = [
-  ["sec-exec", "Executive Summary"], ["sec-compare", "HRBP Comparison"],
-  ["sec-headcount", "Headcount & Budget"], ["sec-funnel", "Recruitment Funnel"],
-  ["sec-ageing", "Ageing & TAT"], ["sec-critical", "Critical Cases"],
-  ["sec-attrition", "Attrition & Movement"], ["sec-pms", "PMS"],
-  ["sec-engagement", "Speak-Up"], ["sec-training", "Training"],
-  ["sec-initiatives", "HR Initiatives"], ["sec-dq", "Data Quality"],
-  ["sec-actions", "Monthly Actions"],
+
+// Each view = one tab panel. Render map keeps charts lazy (built when shown).
+var VIEW_RENDER = {
+  "sec-exec": function () { renderHealthBand(); renderKpis(); renderStory(); },
+  "sec-compare": renderComparison,
+  "sec-headcount": renderHeadcount,
+  "sec-funnel": renderFunnel,
+  "sec-ageing": renderAgeing,
+  "sec-critical": renderCritical,
+  "sec-attrition": renderAttrition,
+  "sec-pms": renderPms,
+  "sec-engagement": renderEngagement,
+  "sec-training": renderTraining,
+  "sec-initiatives": renderInitiatives,
+  "sec-dq": renderDataQuality,
+  "sec-actions": renderActions,
+  "sec-compare2": renderCompare,
+  "sec-defs": function () {},
+};
+var VIEW_IDS = Object.keys(VIEW_RENDER);
+var VIEW_GROUPS = [
+  ["Overview", [["sec-exec", "Executive Summary"], ["sec-compare", "HRBP Comparison"]]],
+  ["Workforce", [["sec-headcount", "Headcount & Budget"], ["sec-attrition", "Attrition & Movement"]]],
+  ["Recruitment", [["sec-funnel", "Recruitment Funnel"], ["sec-ageing", "Ageing & TAT"], ["sec-critical", "Critical Cases"]]],
+  ["People", [["sec-pms", "PMS Readiness"], ["sec-engagement", "Speak-Up & Engagement"], ["sec-training", "Training"], ["sec-initiatives", "HR Initiatives"]]],
+  ["Governance", [["sec-dq", "Data Quality"], ["sec-actions", "Monthly Actions"]]],
+  ["Tools", [["sec-compare2", "Compare Portfolios"], ["sec-defs", "KPI Definitions"]]],
 ];
-function buildScrollspy() {
+function buildNav() {
   var nav = $("#scrollspy");
-  SECTIONS.forEach(function (s) {
-    var a = el("a", { href: "#" + s[0] }, s[1]);
-    a.dataset.target = s[0];
-    nav.appendChild(a);
+  nav.innerHTML = "";
+  VIEW_GROUPS.forEach(function (g) {
+    nav.appendChild(el("div", { class: "nav-group" }, g[0]));
+    g[1].forEach(function (s) {
+      var a = el("a", { href: "#" + s[0] }, s[1]);
+      a.dataset.target = s[0];
+      a.onclick = function (e) { e.preventDefault(); showView(s[0]); };
+      nav.appendChild(a);
+    });
   });
 }
-function setupScrollSpyObserver() {
-  var links = $all("#scrollspy a");
-  var obs = new IntersectionObserver(function (entries) {
-    entries.forEach(function (en) {
-      if (en.isIntersecting) {
-        links.forEach(function (l) { l.classList.toggle("active", l.dataset.target === en.target.id); });
-      }
-    });
-  }, { rootMargin: "-130px 0px -65% 0px" });
-  SECTIONS.forEach(function (s) { var n = document.getElementById(s[0]); if (n) obs.observe(n); });
+function setVisibility() {
+  VIEW_IDS.forEach(function (v) {
+    var n = document.getElementById(v);
+    if (n) n.classList.toggle("view-hidden", v !== ST.activeView);
+  });
+}
+function setNavActive() {
+  $all("#scrollspy a").forEach(function (a) { a.classList.toggle("active", a.dataset.target === ST.activeView); });
+}
+function showView(id) {
+  if (!VIEW_RENDER[id]) id = "sec-exec";
+  ST.activeView = id;
+  setVisibility();
+  setNavActive();
+  renderActive();
+  document.body.classList.remove("nav-open");
+  var m = document.querySelector(".main");
+  if (m) m.scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function toggleEmpty() {
+  var empty = !!(DATA.meta.empty || !DATA.portfolios.length);
+  $("#emptyHero").classList.toggle("hidden", !empty);
+  var sp = document.querySelector(".scrollspy"); if (sp) sp.classList.toggle("hidden", empty);
+  $("#quickViews").classList.toggle("hidden", empty);
+  $("#sec-filters").classList.toggle("hidden", empty);
+  VIEW_IDS.forEach(function (v) { var n = document.getElementById(v); if (n && empty) n.classList.add("view-hidden"); });
+  if (!empty) setVisibility();
+  // header chip
+  var chip = $("#loadChip");
+  if (empty) { chip.className = "status-chip empty"; chip.textContent = "No data loaded"; }
 }
 var QUICKVIEWS = [
-  ["Overall Health", "sec-exec", {}], ["Vacancy Pressure", "sec-headcount", {}],
-  ["Ageing Risk", "sec-ageing", {}], ["Critical Roles", "sec-critical", {}],
-  ["Attrition Watch", "sec-attrition", {}], ["PMS Readiness", "sec-pms", {}],
-  ["Speak-Up Actions", "sec-engagement", {}], ["Training Coverage", "sec-training", {}],
-  ["Data Quality", "sec-dq", {}], ["Monthly Actions", "sec-actions", {}],
+  ["Overall Health", "sec-exec"], ["Vacancy Pressure", "sec-headcount"],
+  ["Ageing Risk", "sec-ageing"], ["Critical Roles", "sec-critical"],
+  ["Attrition Watch", "sec-attrition"], ["PMS Readiness", "sec-pms"],
+  ["Speak-Up Actions", "sec-engagement"], ["Training Coverage", "sec-training"],
+  ["Data Quality", "sec-dq"], ["Monthly Actions", "sec-actions"],
 ];
 function buildQuickViews() {
   var c = $("#quickViews");
+  c.innerHTML = "";
   QUICKVIEWS.forEach(function (q) {
     var b = el("button", {}, q[0]);
-    b.onclick = function () { document.getElementById(q[1]).scrollIntoView({ behavior: "smooth" }); };
+    b.onclick = function () { showView(q[1]); };
     c.appendChild(b);
   });
 }
@@ -351,7 +407,7 @@ function renderKpis() {
   var strip = $("#kpiStrip");
   strip.innerHTML = "";
   k.forEach(function (c) {
-    var card = el("div", { class: "kpi", tabindex: "0", role: "button" });
+    var card = el("div", { class: "kpi rag-" + c.rag, tabindex: "0", role: "button" });
     card.innerHTML =
       '<div class="k-top"><span class="k-label">' + esc(c.l) + '</span>' +
       '<span>' + dot(c.rag) + ' <span class="info" title="' + esc(c.def) + '">i</span></span></div>' +
@@ -372,6 +428,25 @@ function weightedCompanyAttr() {
   var w = 0, a = 0;
   DATA.portfolios.forEach(function (p) { w += (p.attrition || 0) * (p.active || 0); a += (p.active || 0); });
   return a ? Math.round(w / a * 10) / 10 : null;
+}
+
+/* ---------- portfolio health band (scannable overview) ---------- */
+function renderHealthBand() {
+  var band = $("#portfolioHealth");
+  if (!band) return;
+  var sc = $("#execScope"); if (sc) sc.textContent = displayName();
+  band.innerHTML = "";
+  DATA.portfolios.forEach(function (p) {
+    var rag = ragRisk(p.riskBand);
+    var tile = el("div", { class: "health-tile" + (ST.hrbp === p.key ? " active" : ""), tabindex: "0", role: "button" });
+    tile.innerHTML =
+      '<div class="ht-top"><span class="ht-name">' + esc(p.display) + '</span>' + dot(rag) + '</div>' +
+      '<div class="ht-band ' + rag + '">' + esc(p.riskBand || "—") + ' risk</div>' +
+      '<div class="ht-metrics"><span>Vac ' + pct(p.vacancyPct) + '</span><span>Attr ' + pct(p.attrition) + '</span>' +
+      '<span>90+ ' + fmt((p.aging || {}).b90 || 0) + '</span></div>';
+    tile.onclick = function () { setHrbp(ST.hrbp === p.key ? "all" : p.key); };
+    band.appendChild(tile);
+  });
 }
 
 /* ---------- E. portfolio story ---------- */
@@ -991,6 +1066,7 @@ function fillSelectOnce(sel, vals) {
 /* ---------- X. compare two ---------- */
 function buildCompareSelectors() {
   [$("#cmpA"), $("#cmpB")].forEach(function (sel, idx) {
+    sel.innerHTML = "";
     DATA.portfolios.forEach(function (p) { sel.appendChild(el("option", { value: p.key }, p.display)); });
     sel.selectedIndex = idx === 0 ? 0 : Math.min(1, DATA.portfolios.length - 1);
     sel.onchange = renderCompare;
@@ -1268,11 +1344,106 @@ function doSearch(q) {
     r.onclick = function () { groups[r.dataset.g][+r.dataset.i].fn(); box.classList.add("hidden"); $("#globalSearch").value = ""; };
   });
 }
-function go(id) { document.getElementById(id).scrollIntoView({ behavior: "smooth" }); }
+function go(id) { showView(id); }
 
 /* =========================================================================
    COPY / EXPORT / TOAST
    ========================================================================= */
+/* ---------- print: executive summary page + one page per HRBP ---------- */
+function buildPrint() {
+  var root = $("#printRoot");
+  if (DATA.meta.empty || !DATA.portfolios.length) {
+    root.innerHTML = "<section class='print-page'><h1>No data loaded</h1><p>Upload your workbooks before printing.</p></section>";
+    return;
+  }
+  var ps = DATA.portfolios, k = DATA.kpis, html = "";
+
+  function kpiGrid(cards) {
+    return "<div class='p-kpis'>" + cards.map(function (c) {
+      return "<div class='p-kpi'><div class='v'>" + c[1] + "</div><div class='l'>" + esc(c[0]) + "</div></div>";
+    }).join("") + "</div>";
+  }
+  function pHead(title, sub) {
+    return "<div class='p-head'><div><h1>" + esc(title) + "</h1><div class='p-sub'>" + esc(sub) + "</div></div>" +
+      "<div class='p-meta'>" + esc(DATA.meta.title) + "<br/>Generated " + esc(DATA.meta.generatedAt) + "</div></div>";
+  }
+
+  // ----- Page 1: executive summary (whole org) -----
+  html += "<section class='print-page'>";
+  html += pHead("Executive Summary", DATA.meta.subtitle);
+  html += kpiGrid([
+    ["2026 Budget", fmt(k.budget)], ["Active headcount", fmt(k.active)],
+    ["Vacancy", fmt(k.vacancy) + " (" + pct(k.vacancyPct) + ")"], ["Attrition", pct(k.attrition)],
+    ["Joinings YTD", fmt(k.joiningsYTD)], ["Exits YTD", fmt(k.exitsYTD)],
+    ["Net movement YTD", (k.netMovementYTD >= 0 ? "+" : "") + k.netMovementYTD], ["Open pipeline", fmt(k.openPipeline)],
+  ]);
+  html += "<h2>Portfolio comparison</h2><table class='p-tbl'><thead><tr>" +
+    "<th>Portfolio</th><th>Budget</th><th>Active</th><th>Vacancy %</th><th>Attrition %</th>" +
+    "<th>Open pipeline</th><th>90+ ageing</th><th>PMS goal %</th><th>Risk</th></tr></thead><tbody>";
+  ps.forEach(function (p) {
+    html += "<tr><td>" + esc(p.display) + "</td><td>" + fmt(p.budget) + "</td><td>" + fmt(p.active) +
+      "</td><td>" + pct(p.vacancyPct) + "</td><td>" + pct(p.attrition) + "</td><td>" + fmt(p.openPipeline) +
+      "</td><td>" + fmt((p.aging || {}).b90 || 0) + "</td><td>" + pct((p.pms || {}).goalSetting) +
+      "</td><td>" + esc(p.riskBand || "—") + "</td></tr>";
+  });
+  html += "</tbody></table>";
+  var topA = DATA.actions.slice(0, 8);
+  if (topA.length) {
+    html += "<h2>This month's priorities</h2><table class='p-tbl'><thead><tr><th>Priority</th><th>Portfolio</th>" +
+      "<th>Theme</th><th>Recommended action</th><th>Owner</th></tr></thead><tbody>";
+    topA.forEach(function (a) {
+      html += "<tr><td>" + esc(a.priority) + "</td><td>" + esc(a.hrbp) + "</td><td>" + esc(a.theme) +
+        "</td><td>" + esc(a.recommendation) + "</td><td>" + esc(a.owner) + "</td></tr>";
+    });
+    html += "</tbody></table>";
+  }
+  html += "<div class='p-foot'>Portfolio Risk Index is a workload/risk indicator — not an assessment of HRBP performance. Confidential: masked HR data.</div></section>";
+
+  // ----- One page per portfolio -----
+  ps.forEach(function (p) {
+    var r = p.recruitment || {}, ag = p.aging || {};
+    function rt(key) { return r[key] ? r[key].total : 0; }
+    html += "<section class='print-page'>";
+    html += pHead(p.display, "Portfolio one-page summary");
+    html += kpiGrid([
+      ["Budget", fmt(p.budget)], ["Active", fmt(p.active)],
+      ["Vacancy", fmt(p.vacancy) + " (" + pct(p.vacancyPct) + ")"], ["Attrition", pct(p.attrition)],
+      ["Joinings YTD", fmt(p.joiningsYTD)], ["Exits YTD", fmt(p.exitsYTD)],
+      ["Open pipeline", fmt(p.openPipeline)], ["Risk", esc(p.riskBand || "—") + " (" + (p.riskIndex || 0) + ")"],
+    ]);
+    html += "<div class='p-cols'><div>";
+    html += "<h3>Recruitment funnel</h3><table class='p-tbl'><tbody>" +
+      "<tr><td>WIP</td><td>" + rt("wip") + "</td></tr><tr><td>To be offered</td><td>" + rt("toBeOffered") + "</td></tr>" +
+      "<tr><td>Offered</td><td>" + rt("offered") + "</td></tr><tr><td>Joined YTD</td><td>" + rt("joined") + "</td></tr>" +
+      "<tr><td>Offer declined</td><td>" + rt("offerDeclined") + "</td></tr></tbody></table>";
+    html += "<h3>Ageing (WIP " + fmt(ag.wip || 0) + ")</h3><table class='p-tbl'><tbody>" +
+      "<tr><td>0–30</td><td>" + (ag.b0_30 || 0) + "</td></tr><tr><td>30–60</td><td>" + (ag.b30_60 || 0) + "</td></tr>" +
+      "<tr><td>60–90</td><td>" + (ag.b60_90 || 0) + "</td></tr><tr><td>90+</td><td>" + (ag.b90 || 0) + "</td></tr></tbody></table>";
+    html += "</div><div>";
+    html += "<h3>PMS &amp; capability</h3><table class='p-tbl'><tbody>" +
+      "<tr><td>Goal setting</td><td>" + pct((p.pms || {}).goalSetting) + "</td></tr>" +
+      "<tr><td>Mid-year</td><td>" + esc((p.pms || {}).midYear || "—") + "</td></tr>" +
+      "<tr><td>End-year</td><td>" + esc((p.pms || {}).endYear || "—") + "</td></tr>" +
+      "<tr><td>Training days</td><td>" + esc(p.training && p.training.trainingDays != null ? p.training.trainingDays : "—") + "</td></tr></tbody></table>";
+    if ((p.criticalCases || []).length) {
+      html += "<h3>Critical cases</h3><ol class='p-list'>" +
+        p.criticalCases.map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("") + "</ol>";
+    }
+    html += "</div></div>";
+    if (p.attritionInsight && p.attritionInsight !== NA) {
+      html += "<div class='p-note'><b>Attrition insight:</b> " + esc(p.attritionInsight) + "</div>";
+    }
+    var pa = DATA.actions.filter(function (a) { return a.hrbp === p.display; });
+    if (pa.length) {
+      html += "<h3>Priorities</h3><table class='p-tbl'><thead><tr><th>Priority</th><th>Theme</th><th>Action</th><th>Owner</th></tr></thead><tbody>" +
+        pa.map(function (a) { return "<tr><td>" + esc(a.priority) + "</td><td>" + esc(a.theme) + "</td><td>" + esc(a.recommendation) + "</td><td>" + esc(a.owner) + "</td></tr>"; }).join("") +
+        "</tbody></table>";
+    }
+    html += "<div class='p-foot'>Confidential: masked HR data. Portfolio review — not an individual performance comparison.</div></section>";
+  });
+  root.innerHTML = html;
+}
+
 function leadershipSummary() {
   var a = aggregate();
   var worstFn = (function () {
@@ -1369,13 +1540,10 @@ function tr(k, v) { return "<tr><td style='font-weight:600;width:200px'>" + esc(
 function applyView() {
   var analyst = ST.view === "analyst";
   $all(".analyst-only").forEach(function (n) { n.classList.toggle("hidden", !analyst); });
-  // analyst-only sections: tables in headcount/ageing already flagged; also show DQ table detail
   $("#viewExec").classList.toggle("active", !analyst);
   $("#viewAnalyst").classList.toggle("active", analyst);
   $("#viewExec").setAttribute("aria-selected", String(!analyst));
   $("#viewAnalyst").setAttribute("aria-selected", String(analyst));
-  // hide heavy analyst sections in exec view
-  ["sec-compare2"].forEach(function (id) { var n = document.getElementById(id); if (n) n.classList.toggle("hidden", !analyst); });
 }
 
 /* =========================================================================
@@ -1384,11 +1552,17 @@ function applyView() {
 function wireControls() {
   $("#hrbpSel").onchange = function () { setHrbp(this.value); };
   $("#scenarioSel").onchange = function () { ST.scenario = this.value; renderKpis(); renderStory(); };
-  $("#viewExec").onclick = function () { ST.view = "exec"; applyView(); };
-  $("#viewAnalyst").onclick = function () { ST.view = "analyst"; applyView(); };
+  $("#viewExec").onclick = function () { ST.view = "exec"; renderActive(); };
+  $("#viewAnalyst").onclick = function () { ST.view = "analyst"; renderActive(); };
   $("#btnReset").onclick = resetAll;
-  $("#btnPrint").onclick = function () { window.print(); };
+  var nt = $("#navToggle"); if (nt) nt.onclick = function () { document.body.classList.toggle("nav-open"); };
+  $("#btnPrint").onclick = function () { buildPrint(); window.print(); };
   $("#btnCopySummary").onclick = function () { copy(leadershipSummary()); };
+  var heroUp = $("#heroUpload");
+  if (heroUp) heroUp.onclick = function () {
+    var c = $("#dataLoad"); c.classList.add("open"); $(".c-head", c).setAttribute("aria-expanded", "true");
+    c.scrollIntoView({ behavior: "smooth" });
+  };
   $("#globalSearch").oninput = function () { onSearch(this.value); };
   document.addEventListener("click", function (e) {
     if (!e.target.closest(".search-wrap")) $("#searchResults").classList.add("hidden");

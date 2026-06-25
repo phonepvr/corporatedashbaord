@@ -20,7 +20,7 @@
     </div>
     <div class="header-status">
       <span class="status-chip" id="updatedChip">Updated —</span>
-      <span class="status-chip baked" id="loadChip">Demo data loaded (baked)</span>
+      <span class="status-chip empty" id="loadChip">No data loaded</span>
     </div>
   </div>
   <div class="header-controls">
@@ -38,6 +38,7 @@
         <option value="age90">If 90+ Day Roles Closed</option>
       </select>
     </div>
+    <button class="btn navtoggle" id="navToggle" aria-label="Toggle sections menu">☰ Sections</button>
     <div class="seg" role="tablist" aria-label="View mode">
       <button id="viewExec" class="active" role="tab" aria-selected="true">Executive</button>
       <button id="viewAnalyst" role="tab" aria-selected="false">Analyst</button>
@@ -66,20 +67,29 @@
       <div class="card collapsible" id="dataLoad">
         <div class="c-head" tabindex="0" role="button" aria-expanded="false">Data load &amp; source summary</div>
         <div class="c-body">
-          <div class="dq-banner">⚠ <span><b>Optional override:</b> the dashboard ships with baked, anonymised demo data and runs fully offline.
-            You may upload fresh workbooks to re-parse in-browser (PII is masked locally; nothing leaves your machine).</span></div>
+          <div class="dq-banner">⚠ <span><b>No data is loaded by default.</b> Upload your three workbooks below — they are
+            parsed and masked entirely in your browser (nothing leaves your machine; no PII is stored).</span></div>
           <div class="upload-row">
             <div class="u"><b>Monthly HRBP Review</b><br/><input type="file" id="upReview" accept=".xlsx"/></div>
             <div class="u"><b>Budget (Corp &amp; SSC)</b><br/><input type="file" id="upBudget" accept=".xlsx"/></div>
             <div class="u"><b>Recruitment Tracker</b><br/><input type="file" id="upTracker" accept=".xlsx"/></div>
           </div>
           <button class="btn solid btn-sm" id="btnParseUpload">Parse uploaded files</button>
-          <button class="btn ghost btn-sm" id="btnRestoreBaked">Restore baked data</button>
+          <button class="btn ghost btn-sm" id="btnRestoreBaked">Clear loaded data</button>
           <div id="uploadStatus" class="note"></div>
           <div id="sourceSummary" style="margin-top:14px"></div>
         </div>
       </div>
     </section>
+
+    <!-- Empty-state hero (shown when no data is loaded) -->
+    <div id="emptyHero" class="empty-hero hidden">
+      <div class="eh-icon">📊</div>
+      <h2>Upload your workbooks to begin</h2>
+      <p>No data is loaded by default. Add the Monthly HRBP Review, Budget and Recruitment Tracker
+        files — everything is parsed and anonymised locally in your browser.</p>
+      <button class="btn solid" id="heroUpload">Open data upload</button>
+    </div>
 
     <!-- ================= C. GLOBAL FILTER BAR ================= -->
     <section class="section" id="sec-filters">
@@ -90,25 +100,25 @@
     </section>
 
     <!-- ================= D. EXECUTIVE KPI STRIP ================= -->
-    <section class="section" id="sec-exec">
+    <section class="section view-panel" id="sec-exec">
       <div class="section-head">
         <h2>Executive Summary</h2>
         <span class="q">Where do we stand, what's at risk, what needs action?</span>
-        <span class="src">Source: Monthly HRBP Review</span>
+        <span class="src" id="execScope">All HRBPs</span>
       </div>
+      <!-- portfolio health band -->
+      <div class="health-band" id="portfolioHealth" aria-label="Portfolio health overview"></div>
       <div class="kpi-strip" id="kpiStrip"></div>
       <!-- E. portfolio story -->
-      <div class="card" style="margin-top:16px">
-        <div class="story-grid">
-          <div class="story" id="storyNarrative"></div>
-          <div>
-            <h3 style="font-size:13px;margin-bottom:8px">Key risks</h3>
-            <ul class="risk-list" id="storyRisks"></ul>
-          </div>
-          <div>
-            <h3 style="font-size:13px;margin-bottom:8px">Recommended actions</h3>
-            <ul class="risk-list" id="storyActions"></ul>
-          </div>
+      <div class="story-grid" style="margin-top:16px">
+        <div class="card story" id="storyNarrative"></div>
+        <div class="card risk-card">
+          <h3 class="rc-title risk">Key risks</h3>
+          <ul class="risk-list" id="storyRisks"></ul>
+        </div>
+        <div class="card risk-card">
+          <h3 class="rc-title act">Recommended actions</h3>
+          <ul class="risk-list" id="storyActions"></ul>
         </div>
       </div>
     </section>
@@ -315,6 +325,9 @@
 
   </main>
 </div>
+
+<!-- Print-only layout: executive summary page + one page per HRBP (built on demand) -->
+<div id="printRoot" aria-hidden="true"></div>
 
 <!-- R. drill-down drawer -->
 <div class="overlay" id="overlay"></div>
