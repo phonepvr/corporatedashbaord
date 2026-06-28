@@ -1,0 +1,11 @@
+{
+  "_comment": "OPTIONAL per-deployment overrides for portfolio reconciliation. Copy this file to 'portfolios.local.json' (same folder) and edit. It is git-ignored, so the real names you put here are NEVER committed. With no such file, the build uses generic, name-free rules: spelling variants merge by shared prefix, and trainee/OJT/SSC pool sheets fold into the largest portfolio.",
+
+  "merge": {
+    "<a longer spelling of a name>": "<the canonical / shorter display name>"
+  },
+
+  "fold": {
+    "<exact name of a pool / OJT detail sheet>": "<display name of the portfolio it belongs to>"
+  }
+}

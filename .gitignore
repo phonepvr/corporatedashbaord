@@ -1,0 +1,32 @@
+# ---------------------------------------------------------------------------
+# PRIVACY: this is a PUBLIC repo. Nothing that can identify real people or the
+# organisation may be committed. The dashboard ships with an EMPTY js/data.js;
+# real data is loaded at run time (in-browser upload) and never written to disk.
+# ---------------------------------------------------------------------------
+
+# Source HR workbooks — contain real PII. Never commit.
+*.xlsx
+*.xls
+*.xlsm
+*.xlsb
+*.csv
+*.tsv
+data/*.xlsx
+data/*.xls
+
+# Per-deployment overrides that may contain real names (see *.example). Never commit.
+*.local.json
+build/portfolios.local.json
+
+# Locally-built data (real, even if masked) — keep the committed js/data.js empty.
+js/data.local.js
+data.local.js
+*.local.js
+
+# misc
+node_modules/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+Thumbs.db
